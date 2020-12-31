@@ -38,15 +38,24 @@ class ToyCGenerator(ToyCVisitor):
 			self.visit(ctx.getChild(i))
 
 	def visitParam(self, ctx: ToyCParser.ParamContext):
+		# param : mType mID;
 		return {"type": self.visit(ctx.getChild(0)), "name": ctx.getChild(1).getText()}
 	
 	def visitParameters(self, ctx: ToyCParser.ParametersContext):
+		# parameters : param (','param)* |;
 		if ctx.getChildCount() == 0:
 			return []
 		params = []
 		for i in range(0, ctx.getChildCount(), 2):
 			params.append(self.visit(ctx.getChild(i)))
 		return params
+
+	def visitBody(self, ctx: ToyCParser.BodyContext):
+		# body : (block | func';')*;
+		for i in range(ctx.getChildCount()):
+			self.visit(ctx.getChild(i))
+			if self.blocks[-1].is_terminated:
+				break
 
 	def visitReturnBlock(self, ctx: ToyCParser.ReturnBlockContext):
 		# returnBlock : 'return' (mINT|mID)? ';';
@@ -56,6 +65,13 @@ class ToyCGenerator(ToyCVisitor):
 		index = self.visit(ctx.getChild(1))
 		return_value = self.builder[-1].ret(index["name"])
 		return {"type": ir_void, "const": True, "name": return_value}
+
+	def visitFuncBody(self, ctx: ToyCParser.FuncBodyContext):
+		# funcBody : body returnBlock;
+		self.symbol_table.enter_scope()
+		for i in range(ctx.getChildCount()):
+			self.visit(ctx.getChild(i))
+		self.symbol_table.quit_scope()
 
 	def visitMFunction(self, ctx: ToyCParser.MFunctionContext):
 		# mFunction : (mType|mVoid) mID '(' parameters ')' '{' funcBody '}';
@@ -98,6 +114,62 @@ class ToyCGenerator(ToyCVisitor):
 		self.builders.pop()
 		self.symbol_table.quit_scope()
 
+	def visitPrintfFunc(self, ctx: ToyCParser.PrintfFuncContext):
+		# printfFunc : 'printf' '(' (mSTRING | mID) (','expr)* ')';
+		if "printf" in self.funcs:
+			ir_func = self.funcs["printf"]
+		else:
+			param_types = ir.FunctionType(ir_int, [ir.PointerType(ir_pointer)], var_arg = True)
+			ir_func = ir.Function(self.module, param_types, name = "printf")
+			self.funcs["printf"] = ir_func
+		builder = self.builders[-1]
+		zero = ir.Constant(ir_int, 0)
+		params = self.visit(ctx.getChild(2))
+		args = [builder.gep(params["name"], [zero, zero], inbounds = True)]
+		if ctx.getChildCount() == 4:
+			return_value_name = builder.call(ir_func, args)
+		else:
+			for i in range(4, ctx.getChildCount() - 1, 2):
+				param = self.visit(ctx.getChild(i))
+				args.append(param["name"])
+			return_value_name = builder.call(ir_func, args)
+		return {"type": ir_int, "name": return_value_name}
 
+	def visitScanfFunc(self, ctx: ToyCParser.ScanfFuncContext):
+		# scanfFunc : 'scanf' '(' mSTRING (','('&')?(mID|arrayItem))* ')';
+		if "scanf" in self.funcs:
+			ir_func = self.funcs["scanf"]
+		else:
+			param_types = ir.FunctionType(int32, [ir.PointerType(ir_pointer)], var_arg = True)
+			ir_func = ir.Function(self.module, param_types, name = "scanf")
+			self.funcs["scanf"] = ir_func
+		builder = self.builders[-1]
+		zero = ir.Constant(ir_int, 0)
+		params = self.visit(ctx.getChild(0))
+		args = [builder.gep(params["name"], [zero, zero], inbounds = True)]
+		for i in range(4, ctx.getChildCount() - 1, 2):
+			offset = 1 if ctx.getChild(i).getText() == "&" else 0
+			tmp = self.need_load
+			self.need_load = offset == 0
+			param = self.visit(ctx.getChild(i + offset))
+			self.need_load = tmp
+			args.append(param["name"])
+			i += offset
+		return_value_name = builder.call(ir_func, args)
+		return {"type": ir_int, "name": return_value_name}
 
-	
+	def visitSelfDefinedFunc(self, ctx: ToyCParser.SelfDefinedFuncContext):
+		# selfDefinedFunc : mID '('((argument|mID)(','(argument|mID))*)? ')';
+		builder = self.builders[-1]
+		func_name = ctx.getChild(0).getText()
+		if func_name not in self.funcs:
+			raise CompileError(context = ctx, message = "Undefined function")
+		ir_func = self.funcs[func_name]
+		params = []
+		for i in range(2, ctx.getChildCount() - 1, 2):
+			param = self.visit(ctx.getChild(i))
+			# TODO: Check convert func
+			param = self.convert(param, ir_func.args[(i >> 1) - 1].type)
+			params.append(param["name"])
+		return_value_name = builder.call(ir_func, params)
+		return {"type": ir_func.function_type.return_type, "name": return_value_name}
