@@ -109,8 +109,73 @@ class ToyCVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ToyCParser#expr.
-    def visitExpr(self, ctx:ToyCParser.ExprContext):
+    # Visit a parse tree produced by ToyCParser#ARRAY.
+    def visitARRAY(self, ctx:ToyCParser.ARRAYContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ToyCParser#OR.
+    def visitOR(self, ctx:ToyCParser.ORContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ToyCParser#CHAR.
+    def visitCHAR(self, ctx:ToyCParser.CHARContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ToyCParser#FUNCTION.
+    def visitFUNCTION(self, ctx:ToyCParser.FUNCTIONContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ToyCParser#INT.
+    def visitINT(self, ctx:ToyCParser.INTContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ToyCParser#NEG.
+    def visitNEG(self, ctx:ToyCParser.NEGContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ToyCParser#ADDSUB.
+    def visitADDSUB(self, ctx:ToyCParser.ADDSUBContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ToyCParser#AND.
+    def visitAND(self, ctx:ToyCParser.ANDContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ToyCParser#EQUA.
+    def visitEQUA(self, ctx:ToyCParser.EQUAContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ToyCParser#STRING.
+    def visitSTRING(self, ctx:ToyCParser.STRINGContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ToyCParser#DOUBLE.
+    def visitDOUBLE(self, ctx:ToyCParser.DOUBLEContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ToyCParser#ID.
+    def visitID(self, ctx:ToyCParser.IDContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ToyCParser#MULDIV.
+    def visitMULDIV(self, ctx:ToyCParser.MULDIVContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ToyCParser#EXP.
+    def visitEXP(self, ctx:ToyCParser.EXPContext):
         return self.visitChildren(ctx)
 
 

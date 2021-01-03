@@ -44,21 +44,21 @@ forExpr :  itemID '=' expr (',' forExpr)?|;
 //return
 returnBlock : 'return' (itemINT|itemID)? ';';
 
-//表达式情形
-expr : '(' expr ')'              
-    | op='!' expr      
-    | expr '&&' expr       
-    | expr '||' expr	
-	| (op='-')? itemINT                                   
-    | (op='-')? itemDOUBLE   
-	| expr op=('+' | '-') expr
-    | expr op=('*' | '/' | '%') expr
-    | expr op=('==' | '!=' | '<' | '<=' | '>' | '>=') expr                              
-    | itemCHAR                
-    | itemSTRING                   
-    | itemID  
-    | arrayItem  	
-    | func                                                     
+//表达式
+expr : '(' expr ')'              								#EXP
+    | op='!' expr      											#NEG
+    | expr '&&' expr       										#AND
+    | expr '||' expr											#OR
+	| (op='-')? itemINT                                   		#INT
+    | (op='-')? itemDOUBLE										#DOUBLE   
+	| expr op=('+' | '-') expr									#ADDSUB
+    | expr op=('*' | '/' | '%') expr							#MULDIV
+    | expr op=('==' | '!=' | '<' | '<=' | '>' | '>=') expr      #EQUA                 
+    | itemCHAR                									#CHAR
+    | itemSTRING                   								#STRING
+    | itemID 													#ID 
+    | arrayItem  												#ARRAY
+    | func                                                     	#FUNCTION
     ;
 
 itemType : 'int'| 'double'| 'char'| 'string';

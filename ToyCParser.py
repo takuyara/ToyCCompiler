@@ -1836,7 +1836,46 @@ class ToyCParser ( Parser ):
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
-            self.op = None # Token
+
+
+        def getRuleIndex(self):
+            return ToyCParser.RULE_expr
+
+     
+        def copyFrom(self, ctx:ParserRuleContext):
+            super().copyFrom(ctx)
+
+
+    class ARRAYContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ToyCParser.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def arrayItem(self):
+            return self.getTypedRuleContext(ToyCParser.ArrayItemContext,0)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterARRAY" ):
+                listener.enterARRAY(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitARRAY" ):
+                listener.exitARRAY(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitARRAY" ):
+                return visitor.visitARRAY(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class ORContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ToyCParser.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
 
         def expr(self, i:int=None):
             if i is None:
@@ -1845,48 +1884,335 @@ class ToyCParser ( Parser ):
                 return self.getTypedRuleContext(ToyCParser.ExprContext,i)
 
 
-        def itemINT(self):
-            return self.getTypedRuleContext(ToyCParser.ItemINTContext,0)
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterOR" ):
+                listener.enterOR(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitOR" ):
+                listener.exitOR(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitOR" ):
+                return visitor.visitOR(self)
+            else:
+                return visitor.visitChildren(self)
 
 
-        def itemDOUBLE(self):
-            return self.getTypedRuleContext(ToyCParser.ItemDOUBLEContext,0)
+    class CHARContext(ExprContext):
 
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ToyCParser.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
 
         def itemCHAR(self):
             return self.getTypedRuleContext(ToyCParser.ItemCHARContext,0)
 
 
-        def itemSTRING(self):
-            return self.getTypedRuleContext(ToyCParser.ItemSTRINGContext,0)
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterCHAR" ):
+                listener.enterCHAR(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitCHAR" ):
+                listener.exitCHAR(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitCHAR" ):
+                return visitor.visitCHAR(self)
+            else:
+                return visitor.visitChildren(self)
 
 
-        def itemID(self):
-            return self.getTypedRuleContext(ToyCParser.ItemIDContext,0)
+    class FUNCTIONContext(ExprContext):
 
-
-        def arrayItem(self):
-            return self.getTypedRuleContext(ToyCParser.ArrayItemContext,0)
-
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ToyCParser.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
 
         def func(self):
             return self.getTypedRuleContext(ToyCParser.FuncContext,0)
 
 
-        def getRuleIndex(self):
-            return ToyCParser.RULE_expr
-
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpr" ):
-                listener.enterExpr(self)
+            if hasattr( listener, "enterFUNCTION" ):
+                listener.enterFUNCTION(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpr" ):
-                listener.exitExpr(self)
+            if hasattr( listener, "exitFUNCTION" ):
+                listener.exitFUNCTION(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpr" ):
-                return visitor.visitExpr(self)
+            if hasattr( visitor, "visitFUNCTION" ):
+                return visitor.visitFUNCTION(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class INTContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ToyCParser.ExprContext
+            super().__init__(parser)
+            self.op = None # Token
+            self.copyFrom(ctx)
+
+        def itemINT(self):
+            return self.getTypedRuleContext(ToyCParser.ItemINTContext,0)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterINT" ):
+                listener.enterINT(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitINT" ):
+                listener.exitINT(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitINT" ):
+                return visitor.visitINT(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class NEGContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ToyCParser.ExprContext
+            super().__init__(parser)
+            self.op = None # Token
+            self.copyFrom(ctx)
+
+        def expr(self):
+            return self.getTypedRuleContext(ToyCParser.ExprContext,0)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterNEG" ):
+                listener.enterNEG(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitNEG" ):
+                listener.exitNEG(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitNEG" ):
+                return visitor.visitNEG(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class ADDSUBContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ToyCParser.ExprContext
+            super().__init__(parser)
+            self.op = None # Token
+            self.copyFrom(ctx)
+
+        def expr(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(ToyCParser.ExprContext)
+            else:
+                return self.getTypedRuleContext(ToyCParser.ExprContext,i)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterADDSUB" ):
+                listener.enterADDSUB(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitADDSUB" ):
+                listener.exitADDSUB(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitADDSUB" ):
+                return visitor.visitADDSUB(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class ANDContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ToyCParser.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def expr(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(ToyCParser.ExprContext)
+            else:
+                return self.getTypedRuleContext(ToyCParser.ExprContext,i)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterAND" ):
+                listener.enterAND(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitAND" ):
+                listener.exitAND(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitAND" ):
+                return visitor.visitAND(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class EQUAContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ToyCParser.ExprContext
+            super().__init__(parser)
+            self.op = None # Token
+            self.copyFrom(ctx)
+
+        def expr(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(ToyCParser.ExprContext)
+            else:
+                return self.getTypedRuleContext(ToyCParser.ExprContext,i)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterEQUA" ):
+                listener.enterEQUA(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitEQUA" ):
+                listener.exitEQUA(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitEQUA" ):
+                return visitor.visitEQUA(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class STRINGContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ToyCParser.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def itemSTRING(self):
+            return self.getTypedRuleContext(ToyCParser.ItemSTRINGContext,0)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterSTRING" ):
+                listener.enterSTRING(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitSTRING" ):
+                listener.exitSTRING(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitSTRING" ):
+                return visitor.visitSTRING(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class DOUBLEContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ToyCParser.ExprContext
+            super().__init__(parser)
+            self.op = None # Token
+            self.copyFrom(ctx)
+
+        def itemDOUBLE(self):
+            return self.getTypedRuleContext(ToyCParser.ItemDOUBLEContext,0)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterDOUBLE" ):
+                listener.enterDOUBLE(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitDOUBLE" ):
+                listener.exitDOUBLE(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDOUBLE" ):
+                return visitor.visitDOUBLE(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class IDContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ToyCParser.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def itemID(self):
+            return self.getTypedRuleContext(ToyCParser.ItemIDContext,0)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterID" ):
+                listener.enterID(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitID" ):
+                listener.exitID(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitID" ):
+                return visitor.visitID(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class MULDIVContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ToyCParser.ExprContext
+            super().__init__(parser)
+            self.op = None # Token
+            self.copyFrom(ctx)
+
+        def expr(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(ToyCParser.ExprContext)
+            else:
+                return self.getTypedRuleContext(ToyCParser.ExprContext,i)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterMULDIV" ):
+                listener.enterMULDIV(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitMULDIV" ):
+                listener.exitMULDIV(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitMULDIV" ):
+                return visitor.visitMULDIV(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class EXPContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a ToyCParser.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def expr(self):
+            return self.getTypedRuleContext(ToyCParser.ExprContext,0)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterEXP" ):
+                listener.enterEXP(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitEXP" ):
+                listener.exitEXP(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitEXP" ):
+                return visitor.visitEXP(self)
             else:
                 return visitor.visitChildren(self)
 
@@ -1906,6 +2232,10 @@ class ToyCParser ( Parser ):
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,22,self._ctx)
             if la_ == 1:
+                localctx = ToyCParser.EXPContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
+
                 self.state = 258
                 self.match(ToyCParser.T__3)
                 self.state = 259
@@ -1915,6 +2245,9 @@ class ToyCParser ( Parser ):
                 pass
 
             elif la_ == 2:
+                localctx = ToyCParser.NEGContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
                 self.state = 262
                 localctx.op = self.match(ToyCParser.T__17)
                 self.state = 263
@@ -1922,6 +2255,9 @@ class ToyCParser ( Parser ):
                 pass
 
             elif la_ == 3:
+                localctx = ToyCParser.INTContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
                 self.state = 265
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
@@ -1935,6 +2271,9 @@ class ToyCParser ( Parser ):
                 pass
 
             elif la_ == 4:
+                localctx = ToyCParser.DOUBLEContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
                 self.state = 269
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
@@ -1948,26 +2287,41 @@ class ToyCParser ( Parser ):
                 pass
 
             elif la_ == 5:
+                localctx = ToyCParser.CHARContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
                 self.state = 272
                 self.itemCHAR()
                 pass
 
             elif la_ == 6:
+                localctx = ToyCParser.STRINGContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
                 self.state = 273
                 self.itemSTRING()
                 pass
 
             elif la_ == 7:
+                localctx = ToyCParser.IDContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
                 self.state = 274
                 self.itemID()
                 pass
 
             elif la_ == 8:
+                localctx = ToyCParser.ARRAYContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
                 self.state = 275
                 self.arrayItem()
                 pass
 
             elif la_ == 9:
+                localctx = ToyCParser.FUNCTIONContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
                 self.state = 276
                 self.func()
                 pass
@@ -1986,7 +2340,7 @@ class ToyCParser ( Parser ):
                     self._errHandler.sync(self)
                     la_ = self._interp.adaptivePredict(self._input,23,self._ctx)
                     if la_ == 1:
-                        localctx = ToyCParser.ExprContext(self, _parentctx, _parentState)
+                        localctx = ToyCParser.ANDContext(self, ToyCParser.ExprContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 279
                         if not self.precpred(self._ctx, 12):
@@ -1999,7 +2353,7 @@ class ToyCParser ( Parser ):
                         pass
 
                     elif la_ == 2:
-                        localctx = ToyCParser.ExprContext(self, _parentctx, _parentState)
+                        localctx = ToyCParser.ORContext(self, ToyCParser.ExprContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 282
                         if not self.precpred(self._ctx, 11):
@@ -2012,7 +2366,7 @@ class ToyCParser ( Parser ):
                         pass
 
                     elif la_ == 3:
-                        localctx = ToyCParser.ExprContext(self, _parentctx, _parentState)
+                        localctx = ToyCParser.ADDSUBContext(self, ToyCParser.ExprContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 285
                         if not self.precpred(self._ctx, 8):
@@ -2031,7 +2385,7 @@ class ToyCParser ( Parser ):
                         pass
 
                     elif la_ == 4:
-                        localctx = ToyCParser.ExprContext(self, _parentctx, _parentState)
+                        localctx = ToyCParser.MULDIVContext(self, ToyCParser.ExprContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 288
                         if not self.precpred(self._ctx, 7):
@@ -2050,7 +2404,7 @@ class ToyCParser ( Parser ):
                         pass
 
                     elif la_ == 5:
-                        localctx = ToyCParser.ExprContext(self, _parentctx, _parentState)
+                        localctx = ToyCParser.EQUAContext(self, ToyCParser.ExprContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 291
                         if not self.precpred(self._ctx, 6):

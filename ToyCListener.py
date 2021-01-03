@@ -188,12 +188,129 @@ class ToyCListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ToyCParser#expr.
-    def enterExpr(self, ctx:ToyCParser.ExprContext):
+    # Enter a parse tree produced by ToyCParser#ARRAY.
+    def enterARRAY(self, ctx:ToyCParser.ARRAYContext):
         pass
 
-    # Exit a parse tree produced by ToyCParser#expr.
-    def exitExpr(self, ctx:ToyCParser.ExprContext):
+    # Exit a parse tree produced by ToyCParser#ARRAY.
+    def exitARRAY(self, ctx:ToyCParser.ARRAYContext):
+        pass
+
+
+    # Enter a parse tree produced by ToyCParser#OR.
+    def enterOR(self, ctx:ToyCParser.ORContext):
+        pass
+
+    # Exit a parse tree produced by ToyCParser#OR.
+    def exitOR(self, ctx:ToyCParser.ORContext):
+        pass
+
+
+    # Enter a parse tree produced by ToyCParser#CHAR.
+    def enterCHAR(self, ctx:ToyCParser.CHARContext):
+        pass
+
+    # Exit a parse tree produced by ToyCParser#CHAR.
+    def exitCHAR(self, ctx:ToyCParser.CHARContext):
+        pass
+
+
+    # Enter a parse tree produced by ToyCParser#FUNCTION.
+    def enterFUNCTION(self, ctx:ToyCParser.FUNCTIONContext):
+        pass
+
+    # Exit a parse tree produced by ToyCParser#FUNCTION.
+    def exitFUNCTION(self, ctx:ToyCParser.FUNCTIONContext):
+        pass
+
+
+    # Enter a parse tree produced by ToyCParser#INT.
+    def enterINT(self, ctx:ToyCParser.INTContext):
+        pass
+
+    # Exit a parse tree produced by ToyCParser#INT.
+    def exitINT(self, ctx:ToyCParser.INTContext):
+        pass
+
+
+    # Enter a parse tree produced by ToyCParser#NEG.
+    def enterNEG(self, ctx:ToyCParser.NEGContext):
+        pass
+
+    # Exit a parse tree produced by ToyCParser#NEG.
+    def exitNEG(self, ctx:ToyCParser.NEGContext):
+        pass
+
+
+    # Enter a parse tree produced by ToyCParser#ADDSUB.
+    def enterADDSUB(self, ctx:ToyCParser.ADDSUBContext):
+        pass
+
+    # Exit a parse tree produced by ToyCParser#ADDSUB.
+    def exitADDSUB(self, ctx:ToyCParser.ADDSUBContext):
+        pass
+
+
+    # Enter a parse tree produced by ToyCParser#AND.
+    def enterAND(self, ctx:ToyCParser.ANDContext):
+        pass
+
+    # Exit a parse tree produced by ToyCParser#AND.
+    def exitAND(self, ctx:ToyCParser.ANDContext):
+        pass
+
+
+    # Enter a parse tree produced by ToyCParser#EQUA.
+    def enterEQUA(self, ctx:ToyCParser.EQUAContext):
+        pass
+
+    # Exit a parse tree produced by ToyCParser#EQUA.
+    def exitEQUA(self, ctx:ToyCParser.EQUAContext):
+        pass
+
+
+    # Enter a parse tree produced by ToyCParser#STRING.
+    def enterSTRING(self, ctx:ToyCParser.STRINGContext):
+        pass
+
+    # Exit a parse tree produced by ToyCParser#STRING.
+    def exitSTRING(self, ctx:ToyCParser.STRINGContext):
+        pass
+
+
+    # Enter a parse tree produced by ToyCParser#DOUBLE.
+    def enterDOUBLE(self, ctx:ToyCParser.DOUBLEContext):
+        pass
+
+    # Exit a parse tree produced by ToyCParser#DOUBLE.
+    def exitDOUBLE(self, ctx:ToyCParser.DOUBLEContext):
+        pass
+
+
+    # Enter a parse tree produced by ToyCParser#ID.
+    def enterID(self, ctx:ToyCParser.IDContext):
+        pass
+
+    # Exit a parse tree produced by ToyCParser#ID.
+    def exitID(self, ctx:ToyCParser.IDContext):
+        pass
+
+
+    # Enter a parse tree produced by ToyCParser#MULDIV.
+    def enterMULDIV(self, ctx:ToyCParser.MULDIVContext):
+        pass
+
+    # Exit a parse tree produced by ToyCParser#MULDIV.
+    def exitMULDIV(self, ctx:ToyCParser.MULDIVContext):
+        pass
+
+
+    # Enter a parse tree produced by ToyCParser#EXP.
+    def enterEXP(self, ctx:ToyCParser.EXPContext):
+        pass
+
+    # Exit a parse tree produced by ToyCParser#EXP.
+    def exitEXP(self, ctx:ToyCParser.EXPContext):
         pass
 
 
