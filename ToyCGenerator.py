@@ -1,7 +1,12 @@
 # Pionniers du TJ, benissiez-moi par votre Esprits Saints!
+from antlr4 import *
 from llvmlite import ir
 from llvmlite import binding as llvm
-
+from ToyCLexer import ToyCLexer
+from ToyCParser import ToyCParser
+from ToyCVisitor import ToyCVisitor
+from ToyCSymbolTable import SymbolTable
+from ToyCErrorListener import syntaxErrorListener, SemanticError
 from ToyCSymbolTable import SymbolTable
 
 llvm.initialize()
@@ -13,6 +18,7 @@ ir_bool = ir.IntType(1)
 ir_int = ir.IntType(32)
 ir_pointer = ir.IntType(8)
 ir_void = ir.VoidType()
+ir_char = ir.IntType(8)
 
 class ToyCGenerator(ToyCVisitor):
 	def __init__(self):
@@ -159,7 +165,7 @@ class ToyCGenerator(ToyCVisitor):
 		return_value_name = builder.call(ir_func, args)
 		return {"type": ir_int, "name": return_value_name}
 
-	def visitOtherFun(self, ctx: ToyCParser.SelfDefinedFuncContext):
+	def visitOtherFun(self, ctx: ToyCParser.OtherFunContext):
 		# otherFun : itemID '('((argument|itemID)(','(argument|itemID))*)? ')';
 		builder = self.builders[-1]
 		func_name = ctx.getChild(0).getText()

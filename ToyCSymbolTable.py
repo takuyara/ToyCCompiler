@@ -24,6 +24,11 @@ class SymbolTable:
     #input：添加的key，value
     #return：成功True,失败False
     def add(self, key, value):
+        '''
+        if key == "left":
+            print(value)
+            raise CompileError(None, "fuck")
+        '''
         if key in self.Table[self.CurrentLevel]:
             return False
         self.Table[self.CurrentLevel][key] = value
@@ -54,7 +59,7 @@ class SymbolTable:
     
     #判断当前变量是否全局
     #return: 是True,不是False
-    def ifGlobal(self):
+    def isGlobal(self):
         if len(self.Table) == 1:
             return True
         else:

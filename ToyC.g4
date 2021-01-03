@@ -82,7 +82,6 @@ itemINT : INT;
 itemDOUBLE : DOUBLE;
 itemCHAR : CHAR;
 itemSTRING : STRING;
-itemLIB : LIB;
 
 //------词法
 

@@ -41,129 +41,66 @@ class ToyCGenerator(ToyCVisitor):
     
     
     #运算和表达式求值，类型转换相关函数
-    def convert(self, CalcIndex, DType):
-        if (CalcIndex['type'] == DType):
-            return CalcIndex
-        if self.isInteger(CalcIndex['type']) and self.isInteger(DType):
-            if (CalcIndex['type'] == ir_bool):
-                CalcIndex = self.convertIIZ(CalcIndex, DType)
+    def convert(self, index, data_type):
+        if (index['type'] == data_type):
+            return index
+        if self.isInteger(index['type']) and self.isInteger(data_type):
+            if (index['type'] == ir_bool):
+                index = self.convertIIZ(index, data_type)
             else:
-                CalcIndex = self.convertIIS(CalcIndex, DType)
-        elif self.isInteger(CalcIndex['type']) and DType == ir_double:
-            CalcIndex = self.convertIDS(CalcIndex)
-        elif self.isInteger(DType) and CalcIndex['type'] == ir_double:
-            CalcIndex = self.convertDIS(CalcIndex)
-        return CalcIndex
+                index = self.convertIIS(index, data_type)
+        elif self.isInteger(index['type']) and data_type == ir_double:
+            index = self.convertIDS(index)
+        elif self.isInteger(data_type) and index['type'] == ir_double:
+            index = self.convertDIS(index)
+        return index
     
-    def convertIIZ(self, CalcIndex, DType):
-        Builder = self.builders[-1]
-        ConfirmedVal = Builder.zext(CalcIndex['name'], DType)
-        JudgeReg = False
-        return {
-                'type': DType,
-                'const': JudgeReg,
-                'name': ConfirmedVal
-        }
+    def convertIIZ(self, index, data_type):
+        return {'type': data_type, 'const': False, 'name': self.builders[-1].zext(index['name'], data_type)}
 
-    def convertIIS(self, CalcIndex, DType):
-        Builder = self.builders[-1]
-        ConfirmedVal = Builder.sext(CalcIndex['name'], DType)
-        JudgeReg = False
-        return {
-                'type': DType,
-                'const': JudgeReg,
-                'name': ConfirmedVal
-        }
+    def convertIIS(self, index, data_type):
+        return {'type': data_type, 'const': False, 'name': self.builders[-1].sext(index['name'], data_type)}
 
-    def convertDIS(self, CalcIndex, DType):
-        Builder = self.builders[-1]
-        ConfirmedVal = Builder.fptosi(CalcIndex['name'], DType)
-        JudgeReg = False
-        return {
-                'type': DType,
-                'const': JudgeReg,
-                'name': ConfirmedVal
-        }
+    def convertDIS(self, index, data_type):
+        return {'type': data_type, 'const': False, 'name': self.builders[-1].fptosi(index['name'], data_type)}
 
-    def convertDIU(self, CalcIndex, DType):
-        Builder = self.builders[-1]
-        ConfirmedVal = Builder.fptoui(CalcIndex['name'], DType)
-        JudgeReg = False
-        return {
-                'type': DType,
-                'const': JudgeReg,
-                'name': ConfirmedVal
-        }
+    def convertDIU(self, index, data_type):
+        return { 'type': data_type, 'const': False, 'name': self.builders[-1].fptoui(index['name'], data_type)}
 
-    def convertIDS(self, CalcIndex):
-        Builder = self.builders[-1]
-        ConfirmedVal = Builder.sitofp(CalcIndex['name'], ir_double)
-        JudgeReg = False
-        return {
-                'type': ir_double,
-                'const': JudgeReg,
-                'name': ConfirmedVal
-        }
+    def convertIDS(self, index):
+        return {'type': ir_double, 'const': False, 'name': self.builders[-1].sitofp(index['name'], ir_double)}
 
-    def convertIDU(self, CalcIndex):
-        Builder = self.builders[-1]
-        JudgeReg = False
-        ConfirmedVal = Builder.uitofp(CalcIndex['name'], ir_double)
-        return {
-                'type': ir_double,
-                'const': JudgeReg,
-                'name': ConfirmedVal
-        }
+    def convertIDU(self, index):
+        return {'type': ir_double, 'const': False, 'name': self.builders[-1].uitofp(index['name'], ir_double)}
     
     def isInteger(self, object):
         return hasattr(object, "width")
 
-    def exprConvert(self, Index1, Index2):
-        if Index1['type'] == Index2['type']:
-            return Index1, Index2
-        if self.isInteger(Index1['type']) and self.isInteger(Index2['type']):
-            if Index1['type'].width < Index2['type'].width:
-                if Index1['type'].width == 1:
-                    Index1 = self.convertIIZ(Index1, Index2['type'])
+    def exprConvert(self, index1, index2):
+        if index1['type'] == index2['type']:
+            return index1, index2
+        if self.isInteger(index1['type']) and self.isInteger(index2['type']):
+            if index1['type'].width < index2['type'].width:
+                if index1['type'].width == 1:
+                    index1 = self.convertIIZ(index1, index2['type'])
                 else:
-                    Index1 = self.convertIIS(Index1, Index2['type'])
+                    index1 = self.convertIIS(index1, index2['type'])
             else:
-                if Index2['type'].width == 1:
-                    Index2 = self.convertIIZ(Index2, Index1['type'])
+                if index2['type'].width == 1:
+                    index2 = self.convertIIZ(index2, index1['type'])
                 else:
-                    Index2 = self.convertIIS(Index2, Index1['type'])
-        elif self.isInteger(Index1['type']) and Index2['type'] == double:
-            Index1 = convertIDS(Index1, Index2['type'])
-        elif self.isInteger(Index2['type']) and Index1['type'] == double:
-            Index2 = convertIDS(Index2, Index1['type'])
+                    index2 = self.convertIIS(index2, index1['type'])
+        elif self.isInteger(index1['type']) and index2['type'] == double:
+            index1 = convertIDS(index1, index2['type'])
+        elif self.isInteger(index2['type']) and index1['type'] == double:
+            index2 = convertIDS(index2, index1['type'])
         else:
-            raise SemanticError(ctx=ctx,msg="类型不匹配")
-        return Index1, Index2
+            raise CompileError(context=ctx,message="Type mismatch.")
+        return index1, index2
 
     def visitFunc(self, ctx:ToyCParser.FuncContext):
         return self.visit(ctx.getChild(0))
-
-    def visitGetsFun(self, ctx:ToyCParser.GetsFunContext):
-        if 'gets' in self.funcs:
-            gets = self.funcs['gets']
-        else:
-            getsType = ir.FunctionType(ir_int, [], var_arg = True)
-            gets = ir.Function(self.module, getsType, name = "gets")
-            self.funcs['gets'] = gets
-
-        TheBuilder = self.builders[-1]
-        zero = ir.Constant(ir_int, 0)
-
-        PreviousNeedLoad = self.WhetherNeedLoad
-        self.WhetherNeedLoad = False
-        ParameterInfo = self.visit(ctx.getChild(2))
-        self.WhetherNeedLoad = PreviousNeedLoad
-
-        Arguments = [TheBuilder.gep(ParameterInfo['name'], [zero, zero], inbounds = True)]
-        ReturnVariableName = TheBuilder.call(gets, Arguments)
-        Result = {'type': int32, 'name': ReturnVariableName}
-        return Result
-    
+  
     def visitARRAY(self, ctx:ToyCParser.ARRAYContext):
         return self.visit(ctx.getChild(0))
     
@@ -172,99 +109,58 @@ class ToyCGenerator(ToyCVisitor):
     
     def visitDOUBLE(self, ctx:ToyCParser.DOUBLEContext):
         if ctx.getChild(0).getText() == '-':
-            IndexMid = self.visit(ctx.getChild(1))
-            Builder = self.builders[-1]
-            RealReturnValue = Builder.neg(IndexMid['name'])
-            return {
-                    'type': IndexMid['type'],
-                    'name': RealReturnValue
-            }
+            index = self.visit(ctx.getChild(1))
+            return {'type': index['type'], 'name': self.builders[-1].neg(index['name'])}
         return self.visit(ctx.getChild(0))
     
     def visitID(self, ctx:ToyCParser.IDContext):
         return self.visit(ctx.getChild(0))
     
     def visitMULDIV(self, ctx:ToyCParser.MULDIVContext):
-        Builder = self.builders[-1]
-        Index1 = self.visit(ctx.getChild(0))
-        Index2 = self.visit(ctx.getChild(2))
-        Index1, Index2 = self.exprConvert(Index1, Index2)
+        builder = self.builders[-1]
+        index1, index2 = self.exprConvert(self.visit(ctx.getChild(0)), self.visit(ctx.getChild(2)))
         JudgeReg = False
         if ctx.getChild(1).getText() == '*':
-            RealReturnValue = Builder.mul(Index1['name'], Index2['name'])
+            return_value = builder.mul(index1['name'], index2['name'])
         elif ctx.getChild(1).getText() == '/':
-            RealReturnValue = Builder.sdiv(Index1['name'], Index2['name'])
+            return_value = builder.sdiv(index1['name'], index2['name'])
         elif ctx.getChild(1).getText() == '%':
-            RealReturnValue = Builder.srem(Index1['name'], Index2['name'])
-        return {
-                'type': Index1['type'],
-                'const': JudgeReg,
-                'name': RealReturnValue
-        }
+            return_value = builder.srem(index1['name'], index2['name'])
+        return {'type': index1['type'], 'const': False, 'name': return_value}
     
     def visitADDSUB(self, ctx:ToyCParser.ADDSUBContext):
-        Builder = self.builders[-1]
-        Index1 = self.visit(ctx.getChild(0))
-        Index2 = self.visit(ctx.getChild(2))
-        Index1, Index2 = self.exprConvert(Index1, Index2)
-        JudgeReg = False
+        builder = self.builders[-1]
+        index1, index2 = self.exprConvert(self.visit(ctx.getChild(0)), self.visit(ctx.getChild(2)))
         if ctx.getChild(1).getText() == '+':
-            RealReturnValue = Builder.add(Index1['name'], Index2['name'])
+            return_value = builder.add(index1['name'], index2['name'])
         elif ctx.getChild(1).getText() == '-':
-            RealReturnValue = Builder.sub(Index1['name'], Index2['name'])
-        return {
-                'type': Index1['type'],
-                'const': JudgeReg,
-                'name': RealReturnValue
-        }
+            return_value = builder.sub(index1['name'], index2['name'])
+        return {'type': index1['type'], 'const': False, 'name': return_value}
     
     def visitNEG(self, ctx:ToyCParser.NEGContext):
-        RealReturnValue = self.visit(ctx.getChild(1))
-        RealReturnValue = self.toBoolean(RealReturnValue, notFlag = True)
-        # res 未返回
-        return self.visitChildren(ctx)
-    
+        index1 = self.visit(ctx.getChild(0))
+        return {"type": index1["type"], "const": False, "name": self.toBoolean(self.visit(ctx.getChild(1)), notFlag = True)}
+        
     def visitINT(self, ctx:ToyCParser.INTContext):
         if ctx.getChild(0).getText() == '-':
-            IndexMid = self.visit(ctx.getChild(1))
-            Builder = self.builders[-1]
-            RealReturnValue = Builder.neg(IndexMid['name'])
-            return {
-                    'type': IndexMid['type'],
-                    'name': RealReturnValue
-            }
+            index = self.visit(ctx.getChild(1))
+            return {'type': index['type'], 'name': self.builders[-1].neg(index["name"])}
         return self.visit(ctx.getChild(0))
 
     def visitFUNCTION(self, ctx:ToyCParser.FUNCTIONContext):
         return self.visit(ctx.getChild(0))
 
     def visitOR(self, ctx:ToyCParser.ORContext):
-        Index1 = self.visit(ctx.getChild(0))
-        Index1 = self.toBoolean(Index1, notFlag=False)
-        Index2 = self.visit(ctx.getChild(2))
-        Index2 = self.toBoolean(Index2, notFlag=False)
-        Builder = self.builders[-1]
-        RealReturnValue = Builder.or_(Index1['name'], Index2['name'])
-        return {
-                'type': Index1['type'],
-                'const': False,
-                'name': RealReturnValue
-        }
+        index1 = self.toBoolean(self.visit(ctx.getChild(0)), notFlag=False)
+        index2 = self.toBoolean(self.visit(ctx.getChild(2)), notFlag=False)
+        return_value = self.builders[-1].or_(index1['name'], index2['name'])
+        return {'type': index1['type'], 'const': False, 'name': return_value}
     
     def visitCHAR(self, ctx:ToyCParser.CHARContext):
         return self.visit(ctx.getChild(0))
     
-    
-
-    def visitCondition(self, ctx:ToyCParser.ConditionContext):
-        result = self.visit(ctx.getChild(0))
-        return self.toBoolean(result, notFlag=False)
-
     def visitItemArray(self, ctx:ToyCParser.ItemArrayContext):
-        return {
-            'IDname': ctx.getChild(0).getText(),
-            'length': int(ctx.getChild(2).getText())
-        }
+        return {'name': ctx.getChild(0).getText(), 'length': int(ctx.getChild(2).getText())}
 
     def visitItemVoid(self, ctx:ToyCParser.ItemVoidContext):
         return ir_void
@@ -272,194 +168,64 @@ class ToyCGenerator(ToyCVisitor):
     def visitArrayItem(self, ctx:ToyCParser.ArrayItemContext):
         return self.visit(ctx.getChild(0))
 
-
-
-    def visitOtherFun(self, ctx:ToyCParser.OtherFunContext):
-        #获取返回值类型
-        ReturnType = self.visit(ctx.getChild(0)) # mtype
-        
-        #获取函数名 todo
-        FunctionName = ctx.getChild(1).getText() # func name
-        
-        #获取参数列表
-        ParameterList = self.visit(ctx.getChild(3)) # func params
-
-        #根据返回值，函数名称和参数生成llvm函数
-        ParameterTypeList = []
-        for i in range(len(ParameterList)):
-            ParameterTypeList.append(ParameterList[i]['type'])
-        LLVMFunctionType = ir.FunctionType(ReturnType, ParameterTypeList)
-        LLVMFunction = ir.Function(self.module, LLVMFunctionType, name = FunctionName)
-
-        #存储函数的变量        
-        for i in range(len(ParameterList)):
-            LLVMFunction.args[i].name = ParameterList[i]['IDname']
-
-        #存储函数的block
-        TheBlock = LLVMFunction.append_basic_block(name = FunctionName + '.entry')
-
-        #判断重定义，存储函数
-        if FunctionName in self.Functions:
-            raise SemanticError(ctx=ctx,msg="函数重定义错误！")
-        else:
-            self.Functions[FunctionName] = LLVMFunction
-
-        TheBuilder = ir.IRBuilder(TheBlock)
-        self.blocks.append(TheBlock)
-        self.builders.append(TheBuilder)
-
-        #进一层
-        self.current_func = FunctionName
-        self.symbol_table.addLevel()
-
-        #存储函数的变量
-        VariableList = {}
-        for i in range(len(ParameterList)):
-            NewVariable = TheBuilder.alloca(ParameterList[i]['type'])
-            TheBuilder.store(LLVMFunction.args[i], NewVariable)
-            TheVariable = {}
-            TheVariable["Type"] = ParameterList[i]['type']
-            TheVariable["Name"] = NewVariable
-            TheResult = self.SymbolTable.AddItem(ParameterList[i]['IDname'], TheVariable)
-            if TheResult["result"] != "success":
-                raise SemanticError(ctx=ctx,msg=TheResult["reason"])
-
-        #处理函数body
-        self.visit(ctx.getChild(6)) # func body
-
-        #处理完毕，退一层
-        self.CurrentFunction = ''
-        self.blocks.pop()
-        self.builders.pop()
-        self.symbol_table.declineLevel()
-        return
-
     def visitArgument(self, ctx:ToyCParser.ArgumentContext):
         return self.visit(ctx.getChild(0))
 
     def visitItemID(self, ctx:ToyCParser.ItemIDContext):
-        IDname = ctx.getText()
+        item_name = ctx.getText()
         JudgeReg = False
-        if self.symbol_table.ifExist(IDname) != True:
-           return {
-                'type': ir_int,
-                'const': JudgeReg,
-                'name': ir.Constant(ir_int, None)
-            }
-        Builder = self.builders[-1]
-        TheItem = self.symbol_table.get(IDname)
-        if TheItem != None:
-            if self.WhetherNeedLoad:
-                ReturnValue = Builder.load(TheItem["Name"])
-                return {
-                    "type" : TheItem["Type"],
-                    "const" : JudgeReg,
-                    "name" : ReturnValue,
-                    "struct_name" : TheItem["StructName"] if "StructName" in TheItem else None
-                }
+        if not self.symbol_table.ifExist(item_name):
+           return {'type': ir_int, 'const': JudgeReg, 'name': ir.Constant(ir_int, None)}
+        builder = self.builders[-1]
+        item = self.symbol_table.get(item_name)
+        if item is not None:
+            if self.need_load:
+                return {"type" : item["type"], "const" : False, "name" : builder.load(item["name"])}
             else:
-                return {
-                    "type" : TheItem["Type"],
-                    "const" : JudgeReg,
-                    "name" : TheItem["Name"],
-                    "struct_name" : TheItem["StructName"] if "StructName" in TheItem else None
-                }
+                return {"type" : item["type"], "const" : False, "name" : item["name"]}
         else:
-            return {
-                'type': ir_void,
-                'const': JudgeReg,
-                'name': ir.Constant(ir_void, None)
-            }
-
+            return {'type': ir_void, 'const': False, 'name': ir.Constant(ir_void, None)}
 
     def visitItemINT(self, ctx:ToyCParser.ItemINTContext):
-        JudgeReg = True
-        return {
-                'type': ir_int,
-                'const': JudgeReg,
-                'name': ir.Constant(ir_int, int(ctx.getText()))
-        }
+        return {'type': ir_int, 'const': True, 'name': ir.Constant(ir_int, int(ctx.getText()))}
 
     def visitItemDOUBLE(self, ctx:ToyCParser.ItemDOUBLEContext):
-        JudgeReg = True
-        return {
-                'type': ir_double,
-                'const': JudgeReg,
-                'name': ir.Constant(ir_double, float(ctx.getText()))
-        }
-
+        return {'type': ir_double, 'const': True, 'name': ir.Constant(ir_double, float(ctx.getText()))}
 
     def visitItemCHAR(self, ctx:ToyCParser.ItemCHARContext):
-        JudgeReg = True
-        return {
-                'type': ir_pointer,
-                'const': JudgeReg,
-                'name': ir.Constant(ir_pointer, ord(ctx.getText()[1]))
-        }
+        return {'type': ir_char, 'const': True, 'name': ir.Constant(ir_char, ord(ctx.getText()[1]))}
 
     def visitItemSTRING(self, ctx:ToyCParser.ItemSTRINGContext):
-        MarkIndex = self.n_string
         self.n_string += 1
-        ProcessIndex = ctx.getText().replace('\\n', '\n')
-        ProcessIndex = ProcessIndex[1:-1]
-        ProcessIndex += '\0'
-        Len = len(bytearray(ProcessIndex, 'utf-8'))
-        JudgeReg = False
-        RealReturnValue = ir.GlobalVariable(self.module, ir.ArrayType(ir_pointer, Len), ".str%d"%MarkIndex)
-        RealReturnValue.global_constant = True
-        RealReturnValue.initializer = ir.Constant(ir.ArrayType(ir_pointer, Len), bytearray(ProcessIndex, 'utf-8'))
-        return {
-                'type': ir.ArrayType(ir_pointer, Len),
-                'const': JudgeReg,
-                'name': RealReturnValue
-        }
-    
-    #TODO: 
-    def visitItemLIB(self, ctx:ToyCParser.ItemLIBContext):
-        pass
+        index = ctx.getText().replace('\\n', '\n')
+        index = ProcessIndex[1:-1]
+        index += '\0'
+        length = len(bytearray(ProcessIndex, 'utf-8'))
+        return_value = ir.GlobalVariable(self.module, ir.ArrayType(ir_pointer, length), ".str_id_%d" % self.n_string)
+        return_value.global_constant = True
+        return_value.initializer = ir.Constant(ir.ArrayType(ir_pointer, Len), bytearray(ProcessIndex, 'utf-8'))
+        return {'type': ir.ArrayType(ir_pointer, length), 'const': False, 'name': return_value}
 
-    def toBoolean(self, ManipulateIndex, notFlag = True):
-        Builder = self.builders[-1]
+    def toBoolean(self, index, notFlag = True):
+        builder = self.builders[-1]
         if notFlag:
-            OperationChar = '=='
+            operator = '=='
         else:
-            OperationChar = '!='
-        if ManipulateIndex['type'] == ir_pointer or ManipulateIndex['type'] == ir_int:
-            RealReturnValue = Builder.icmp_signed(OperationChar, ManipulateIndex['name'], ir.Constant(ManipulateIndex['type'], 0))
-            return {
-                    'tpye': ir_bool,
-                    'const': False,
-                    'name': RealReturnValue
-            }
-        elif ManipulateIndex['type'] == ir_double:
-            RealReturnValue = Builder.fcmp_ordered(OperationChar, ManipulateIndex['name'], ir.Constant(ir_double, 0))
-            return {
-                    'tpye': ir_bool,
-                    'const': False,
-                    'name': RealReturnValue
-            }
-        return ManipulateIndex
+            operator = '!='
+        if index['type'] == ir_pointer or index['type'] == ir_int:
+            return {'type': ir_bool, 'const': False, 'name': builder.icmp_signed(operator, index['name'], ir.Constant(index['type'], 0))}
+        elif index['type'] == ir_double:
+            return {'type': ir_bool, 'const': False, 'name': builder.fcmp_ordered(operator, index['name'], ir.Constant(ir_double, 0))}
+        return index
     
-
     def save_to_file(self, filename):
         with open(filename, "w") as f:
             f.write(repr(self.module))
 
 def generate(input_filename, output_filename):
-    """
-    将C代码文件转成IR代码文件
-    :param input_filename: C代码文件
-    :param output_filename: IR代码文件
-    :return: 生成是否成功
-    """
     lexer = ToyCLexer(FileStream(input_filename))
-    stream = CommonTokenStream(lexer)
-    
+    stream = CommonTokenStream(lexer)    
     parser = ToyCParser(stream)
-    parser.removeErrorListeners()
-    errorListener = syntaxErrorListener()
-    parser.addErrorListener(errorListener)
-
     tree = parser.prog()
     generator = ToyCGenerator()
     generator.visit(tree)

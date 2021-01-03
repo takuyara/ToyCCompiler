@@ -1,4 +1,4 @@
-from Generator import generate
+from all_generator import generate
 import sys
 
 if __name__ == '__main__':
