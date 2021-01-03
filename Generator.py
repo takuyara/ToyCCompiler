@@ -35,151 +35,252 @@ class ToyCGenerator(ToyCVisitor):
         self.current_func = []
         self.n_string = 0
         self.need_load = True
-        self.end_if = none
+        self.end_if = None
 
         self.symbol_table = SymbolTable()
-
-    # def visitProg(self, ctx: ToyCParser.ProgContext):
-    #     # prog :(include)* (initBlock|initArrBlock|mFunction)*;
-    #     for i in range(ctx.getChildCount()):
-    #         self.visit(ctx.getChild(i))
-
-    # def visitParam(self, ctx: ToyCParser.ParamContext):
-    #     # param : mType mID;
-    #     return {"type": self.visit(ctx.getChild(0)), "name": ctx.getChild(1).getText()}
     
-    # def visitParameters(self, ctx: ToyCParser.ParametersContext):
-    #     # parameters : param (','param)* |;
-    #     if ctx.getChildCount() == 0:
-    #         return []
-    #     params = []
-    #     for i in range(0, ctx.getChildCount(), 2):
-    #         params.append(self.visit(ctx.getChild(i)))
-    #     return params
+    
+    #运算和表达式求值，类型转换相关函数
+    def convert(self, CalcIndex, DType):
+        if (CalcIndex['type'] == DType):
+            return CalcIndex
+        if self.isInteger(CalcIndex['type']) and self.isInteger(DType):
+            if (CalcIndex['type'] == ir_bool):
+                CalcIndex = self.convertIIZ(CalcIndex, DType)
+            else:
+                CalcIndex = self.convertIIS(CalcIndex, DType)
+        elif self.isInteger(CalcIndex['type']) and DType == ir_double:
+            CalcIndex = self.convertIDS(CalcIndex)
+        elif self.isInteger(DType) and CalcIndex['type'] == ir_double:
+            CalcIndex = self.convertDIS(CalcIndex)
+        return CalcIndex
+    
+    def convertIIZ(self, CalcIndex, DType):
+        Builder = self.builders[-1]
+        ConfirmedVal = Builder.zext(CalcIndex['name'], DType)
+        JudgeReg = False
+        return {
+                'type': DType,
+                'const': JudgeReg,
+                'name': ConfirmedVal
+        }
 
-    # def visitBody(self, ctx: ToyCParser.BodyContext):
-    #     # body : (block | func';')*;
-    #     for i in range(ctx.getChildCount()):
-    #         self.visit(ctx.getChild(i))
-    #         if self.blocks[-1].is_terminated:
-    #             break
+    def convertIIS(self, CalcIndex, DType):
+        Builder = self.builders[-1]
+        ConfirmedVal = Builder.sext(CalcIndex['name'], DType)
+        JudgeReg = False
+        return {
+                'type': DType,
+                'const': JudgeReg,
+                'name': ConfirmedVal
+        }
 
-    # def visitReturnBlock(self, ctx: ToyCParser.ReturnBlockContext):
-    #     # returnBlock : 'return' (mINT|mID)? ';';
-    #     if ctx.getChildCount() == 2:
-    #         return_value = self.builders[-1].ret_void()
-    #         return {"type": ir_void, "const": True, "name": return_value}
-    #     index = self.visit(ctx.getChild(1))
-    #     return_value = self.builder[-1].ret(index["name"])
-    #     return {"type": ir_void, "const": True, "name": return_value}
+    def convertDIS(self, CalcIndex, DType):
+        Builder = self.builders[-1]
+        ConfirmedVal = Builder.fptosi(CalcIndex['name'], DType)
+        JudgeReg = False
+        return {
+                'type': DType,
+                'const': JudgeReg,
+                'name': ConfirmedVal
+        }
 
-    # def visitFuncBody(self, ctx: ToyCParser.FuncBodyContext):
-    #     # funcBody : body returnBlock;
-    #     self.symbol_table.enter_scope()
-    #     for i in range(ctx.getChildCount()):
-    #         self.visit(ctx.getChild(i))
-    #     self.symbol_table.quit_scope()
+    def convertDIU(self, CalcIndex, DType):
+        Builder = self.builders[-1]
+        ConfirmedVal = Builder.fptoui(CalcIndex['name'], DType)
+        JudgeReg = False
+        return {
+                'type': DType,
+                'const': JudgeReg,
+                'name': ConfirmedVal
+        }
 
-    # def visitMFunction(self, ctx: ToyCParser.MFunctionContext):
-    #     # mFunction : (mType|mVoid) mID '(' parameters ')' '{' funcBody '}';
-    #     return_value_type = self.visit(ctx.getChild(0))
-    #     func_name = ctx.getChild(1).getText()
-    #     params = self.visit(ctx.getChild(3))
-    #     param_types = []
-    #     for i in params:
-    #         param_types.append(params["type"])
-    #     ir_func_type = ir.FunctionType(return_value_type, param_types)
-    #     ir_func = ir.Function(self.module, ir_func_type, name = func_name)
-    #     for i in range(len(params)):
-    #         ir_func.args[i].name = params[i]["name"]
-    #     if func_name in self.funcs:
-    #         raise CompileError(context = ctx, message = "Duplicate function name.")
-    #     self.funcs[func_name] = ir_func
-    #     block = ir_func.append_basic_block(name = func_name + ".block")
-    #     self.blocks.append(block)
-    #     builder = ir.IRBuilder(block)
-    #     self.builders.append(builder)
-    #     self.current_func = func_name
-    #     # TODO: Check
-    #     self.symbol_table.enter_scope()
-    #     variables = {}
-    #     for i in range(len(params)):
-    #         current_param = params[i]
-    #         variable_name = builder.alloca(current_param["type"])
-    #         builder.store(ir_func.args[i], variable_name)
-    #         current_variable = {
-    #             "type": current_param["type"],
-    #             "name": variable_name,
-    #         }
-    #         # TODO: Check
-    #         res = self.symbol_table.add_item(current_param["name"], variable_name)
-    #         if res["result"] != "success":
-    #             raise CompileError(context = ctx, message = res["reason"])
-    #     self.visit(ctx.getChild(6))
-    #     self.current_func = ""
-    #     self.blocks.pop()
-    #     self.builders.pop()
-    #     self.symbol_table.quit_scope()
+    def convertIDS(self, CalcIndex):
+        Builder = self.builders[-1]
+        ConfirmedVal = Builder.sitofp(CalcIndex['name'], ir_double)
+        JudgeReg = False
+        return {
+                'type': ir_double,
+                'const': JudgeReg,
+                'name': ConfirmedVal
+        }
 
-    # def visitPrintfFunc(self, ctx: ToyCParser.PrintfFuncContext):
-    #     # printfFunc : 'printf' '(' (mSTRING | mID) (','expr)* ')';
-    #     if "printf" in self.funcs:
-    #         ir_func = self.funcs["printf"]
-    #     else:
-    #         param_types = ir.FunctionType(ir_int, [ir.PointerType(ir_pointer)], var_arg = True)
-    #         ir_func = ir.Function(self.module, param_types, name = "printf")
-    #         self.funcs["printf"] = ir_func
-    #     builder = self.builders[-1]
-    #     zero = ir.Constant(ir_int, 0)
-    #     params = self.visit(ctx.getChild(2))
-    #     args = [builder.gep(params["name"], [zero, zero], inbounds = True)]
-    #     if ctx.getChildCount() == 4:
-    #         return_value_name = builder.call(ir_func, args)
-    #     else:
-    #         for i in range(4, ctx.getChildCount() - 1, 2):
-    #             param = self.visit(ctx.getChild(i))
-    #             args.append(param["name"])
-    #         return_value_name = builder.call(ir_func, args)
-    #     return {"type": ir_int, "name": return_value_name}
+    def convertIDU(self, CalcIndex):
+        Builder = self.builders[-1]
+        JudgeReg = False
+        ConfirmedVal = Builder.uitofp(CalcIndex['name'], ir_double)
+        return {
+                'type': ir_double,
+                'const': JudgeReg,
+                'name': ConfirmedVal
+        }
+    
+    def isInteger(self, object):
+        return hasattr(object, "width")
 
-    # def visitScanfFunc(self, ctx: ToyCParser.ScanfFuncContext):
-    #     # scanfFunc : 'scanf' '(' mSTRING (','('&')?(mID|arrayItem))* ')';
-    #     if "scanf" in self.funcs:
-    #         ir_func = self.funcs["scanf"]
-    #     else:
-    #         param_types = ir.FunctionType(int32, [ir.PointerType(ir_pointer)], var_arg = True)
-    #         ir_func = ir.Function(self.module, param_types, name = "scanf")
-    #         self.funcs["scanf"] = ir_func
-    #     builder = self.builders[-1]
-    #     zero = ir.Constant(ir_int, 0)
-    #     params = self.visit(ctx.getChild(0))
-    #     args = [builder.gep(params["name"], [zero, zero], inbounds = True)]
-    #     for i in range(4, ctx.getChildCount() - 1, 2):
-    #         offset = 1 if ctx.getChild(i).getText() == "&" else 0
-    #         tmp = self.need_load
-    #         self.need_load = offset == 0
-    #         param = self.visit(ctx.getChild(i + offset))
-    #         self.need_load = tmp
-    #         args.append(param["name"])
-    #         i += offset
-    #     return_value_name = builder.call(ir_func, args)
-    #     return {"type": ir_int, "name": return_value_name}
+    def exprConvert(self, Index1, Index2):
+        if Index1['type'] == Index2['type']:
+            return Index1, Index2
+        if self.isInteger(Index1['type']) and self.isInteger(Index2['type']):
+            if Index1['type'].width < Index2['type'].width:
+                if Index1['type'].width == 1:
+                    Index1 = self.convertIIZ(Index1, Index2['type'])
+                else:
+                    Index1 = self.convertIIS(Index1, Index2['type'])
+            else:
+                if Index2['type'].width == 1:
+                    Index2 = self.convertIIZ(Index2, Index1['type'])
+                else:
+                    Index2 = self.convertIIS(Index2, Index1['type'])
+        elif self.isInteger(Index1['type']) and Index2['type'] == double:
+            Index1 = convertIDS(Index1, Index2['type'])
+        elif self.isInteger(Index2['type']) and Index1['type'] == double:
+            Index2 = convertIDS(Index2, Index1['type'])
+        else:
+            raise SemanticError(ctx=ctx,msg="类型不匹配")
+        return Index1, Index2
 
-    # def visitSelfDefinedFunc(self, ctx: ToyCParser.SelfDefinedFuncContext):
-    #     # selfDefinedFunc : mID '('((argument|mID)(','(argument|mID))*)? ')';
-    #     builder = self.builders[-1]
-    #     func_name = ctx.getChild(0).getText()
-    #     if func_name not in self.funcs:
-    #         raise CompileError(context = ctx, message = "Undefined function")
-    #     ir_func = self.funcs[func_name]
-    #     params = []
-    #     for i in range(2, ctx.getChildCount() - 1, 2):
-    #         param = self.visit(ctx.getChild(i))
-    #         # TODO: Check convert func
-    #         param = self.convert(param, ir_func.args[(i >> 1) - 1].type)
-    #         params.append(param["name"])
-    #     return_value_name = builder.call(ir_func, params)
-    #     return {"type": ir_func.function_type.return_type, "name": return_value_name}
+    def visitFunc(self, ctx:ToyCParser.FuncContext):
+        return self.visit(ctx.getChild(0))
+
+    def visitGetsFun(self, ctx:ToyCParser.GetsFunContext):
+        if 'gets' in self.funcs:
+            gets = self.funcs['gets']
+        else:
+            getsType = ir.FunctionType(ir_int, [], var_arg = True)
+            gets = ir.Function(self.module, getsType, name = "gets")
+            self.funcs['gets'] = gets
+
+        TheBuilder = self.builders[-1]
+        zero = ir.Constant(ir_int, 0)
+
+        PreviousNeedLoad = self.WhetherNeedLoad
+        self.WhetherNeedLoad = False
+        ParameterInfo = self.visit(ctx.getChild(2))
+        self.WhetherNeedLoad = PreviousNeedLoad
+
+        Arguments = [TheBuilder.gep(ParameterInfo['name'], [zero, zero], inbounds = True)]
+        ReturnVariableName = TheBuilder.call(gets, Arguments)
+        Result = {'type': int32, 'name': ReturnVariableName}
+        return Result
+    
+    def visitCondition(self, ctx:ToyCParser.ConditionContext):
+        result = self.visit(ctx.getChild(0))
+        return self.toBoolean(result, notFlag=False)
+
+    def visitItemArray(self, ctx:ToyCParser.ItemArrayContext):
+        return {
+            'IDname': ctx.getChild(0).getText(),
+            'length': int(ctx.getChild(2).getText())
+        }
+
+    def visitItemVoid(self, ctx:ToyCParser.ItemVoidContext):
+        return ir_void
+
+    def visitArrayItem(self, ctx:ToyCParser.ArrayItemContext):
+        return self.visit(ctx.getChild(0))
+
+    def visitArgument(self, ctx:ToyCParser.ArgumentContext):
+        return self.visit(ctx.getChild(0))
+
+    def visitItemID(self, ctx:ToyCParser.ItemIDContext):
+        IDname = ctx.getText()
+        JudgeReg = False
+        if self.symbol_table.ifExist(IDname) != True:
+           return {
+                'type': ir_int,
+                'const': JudgeReg,
+                'name': ir.Constant(ir_int, None)
+            }
+        Builder = self.builders[-1]
+        TheItem = self.symbol_table.get(IDname)
+        if TheItem != None:
+            if self.WhetherNeedLoad:
+                ReturnValue = Builder.load(TheItem["Name"])
+                return {
+                    "type" : TheItem["Type"],
+                    "const" : JudgeReg,
+                    "name" : ReturnValue,
+                    "struct_name" : TheItem["StructName"] if "StructName" in TheItem else None
+                }
+            else:
+                return {
+                    "type" : TheItem["Type"],
+                    "const" : JudgeReg,
+                    "name" : TheItem["Name"],
+                    "struct_name" : TheItem["StructName"] if "StructName" in TheItem else None
+                }
+        else:
+            return {
+                'type': ir_void,
+                'const': JudgeReg,
+                'name': ir.Constant(ir_void, None)
+            }
+
+
+    def visitItemINT(self, ctx:ToyCParser.ItemINTContext):
+        JudgeReg = True
+        return {
+                'type': ir_int,
+                'const': JudgeReg,
+                'name': ir.Constant(ir_int, int(ctx.getText()))
+        }
+
+    def visitItemDOUBLE(self, ctx:ToyCParser.ItemDOUBLEContext):
+        JudgeReg = True
+        return {
+                'type': ir_double,
+                'const': JudgeReg,
+                'name': ir.Constant(ir_double, float(ctx.getText()))
+        }
+
+
+    def visitItemCHAR(self, ctx:ToyCParser.ItemCHARContext):
+        JudgeReg = True
+        return {
+                'type': ir_pointer,
+                'const': JudgeReg,
+                'name': ir.Constant(ir_pointer, ord(ctx.getText()[1]))
+        }
+
+    def visitItemSTRING(self, ctx:ToyCParser.ItemSTRINGContext):
+        MarkIndex = self.n_string
+        self.n_string += 1
+        ProcessIndex = ctx.getText().replace('\\n', '\n')
+        ProcessIndex = ProcessIndex[1:-1]
+        ProcessIndex += '\0'
+        Len = len(bytearray(ProcessIndex, 'utf-8'))
+        JudgeReg = False
+        RealReturnValue = ir.GlobalVariable(self.module, ir.ArrayType(ir_pointer, Len), ".str%d"%MarkIndex)
+        RealReturnValue.global_constant = True
+        RealReturnValue.initializer = ir.Constant(ir.ArrayType(ir_pointer, Len), bytearray(ProcessIndex, 'utf-8'))
+        return {
+                'type': ir.ArrayType(ir_pointer, Len),
+                'const': JudgeReg,
+                'name': RealReturnValue
+        }
+
+    def toBoolean(self, ManipulateIndex, notFlag = True):
+        Builder = self.builders[-1]
+        if notFlag:
+            OperationChar = '=='
+        else:
+            OperationChar = '!='
+        if ManipulateIndex['type'] == ir_pointer or ManipulateIndex['type'] == ir_int:
+            RealReturnValue = Builder.icmp_signed(OperationChar, ManipulateIndex['name'], ir.Constant(ManipulateIndex['type'], 0))
+            return {
+                    'tpye': ir_bool,
+                    'const': False,
+                    'name': RealReturnValue
+            }
+        elif ManipulateIndex['type'] == ir_double:
+            RealReturnValue = Builder.fcmp_ordered(OperationChar, ManipulateIndex['name'], ir.Constant(ir_double, 0))
+            return {
+                    'tpye': ir_bool,
+                    'const': False,
+                    'name': RealReturnValue
+            }
+        return ManipulateIndex
 
     def save_to_file(self, filename):
         with open(filename, "w") as f:
@@ -203,4 +304,5 @@ def generate(input_filename, output_filename):
     tree = parser.prog()
     generator = ToyCGenerator()
     generator.visit(tree)
-    generator.save(output_filename)
+    print(generator.module)
+    generator.save_to_file(output_filename)
