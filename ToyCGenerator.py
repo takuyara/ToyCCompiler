@@ -2,6 +2,8 @@
 from llvmlite import ir
 from llvmlite import binding as llvm
 
+from ToyCSymbolTable import SymbolTable
+
 llvm.initialize()
 llvm.initialize_native_target()
 llvm.initialize_native_asmprinter()
@@ -37,12 +39,12 @@ class ToyCGenerator(ToyCVisitor):
 		for i in range(ctx.getChildCount()):
 			self.visit(ctx.getChild(i))
 
-	def visitParam(self, ctx: ToyCParser.ParamContext):
-		# param : mType mID;
+	def visitParameter(self, ctx: ToyCParser.ParameterContext):
+		# parameter : itemType itemID;
 		return {"type": self.visit(ctx.getChild(0)), "name": ctx.getChild(1).getText()}
 	
 	def visitParameters(self, ctx: ToyCParser.ParametersContext):
-		# parameters : param (','param)* |;
+		# parameters : parameter (','parameter)* |;
 		if ctx.getChildCount() == 0:
 			return []
 		params = []
@@ -58,7 +60,7 @@ class ToyCGenerator(ToyCVisitor):
 				break
 
 	def visitReturnBlock(self, ctx: ToyCParser.ReturnBlockContext):
-		# returnBlock : 'return' (mINT|mID)? ';';
+		# returnBlock : 'return' (itemINT|itemID)? ';';
 		if ctx.getChildCount() == 2:
 			return_value = self.builders[-1].ret_void()
 			return {"type": ir_void, "const": True, "name": return_value}
@@ -68,13 +70,13 @@ class ToyCGenerator(ToyCVisitor):
 
 	def visitFuncBody(self, ctx: ToyCParser.FuncBodyContext):
 		# funcBody : body returnBlock;
-		self.symbol_table.enter_scope()
+		self.symbol_table.addLevel()
 		for i in range(ctx.getChildCount()):
 			self.visit(ctx.getChild(i))
-		self.symbol_table.quit_scope()
+		self.symbol_table.declineLevel()
 
-	def visitMFunction(self, ctx: ToyCParser.MFunctionContext):
-		# mFunction : (mType|mVoid) mID '(' parameters ')' '{' funcBody '}';
+	def visitItemFunction(self, ctx: ToyCParser.ItemFunctionContext):
+		# itemFunction : (itemType|itemVoid) itemID '(' parameters ')' '{' funcBody '}';
 		return_value_type = self.visit(ctx.getChild(0))
 		func_name = ctx.getChild(1).getText()
 		params = self.visit(ctx.getChild(3))
@@ -94,7 +96,7 @@ class ToyCGenerator(ToyCVisitor):
 		self.builders.append(builder)
 		self.current_func = func_name
 		# TODO: Check
-		self.symbol_table.enter_scope()
+		self.symbol_table.addLevel()
 		variables = {}
 		for i in range(len(params)):
 			current_param = params[i]
@@ -104,18 +106,16 @@ class ToyCGenerator(ToyCVisitor):
 				"type": current_param["type"],
 				"name": variable_name,
 			}
-			# TODO: Check
-			res = self.symbol_table.add_item(current_param["name"], variable_name)
-			if res["result"] != "success":
-				raise CompileError(context = ctx, message = res["reason"])
+			if not self.symbol_table.add(current_param["name"], variable_name):
+				raise CompileError(context = ctx, message = "Duplicate variable name.")
 		self.visit(ctx.getChild(6))
 		self.current_func = ""
 		self.blocks.pop()
 		self.builders.pop()
-		self.symbol_table.quit_scope()
+		self.symbol_table.declineLevel()
 
-	def visitPrintfFunc(self, ctx: ToyCParser.PrintfFuncContext):
-		# printfFunc : 'printf' '(' (mSTRING | mID) (','expr)* ')';
+	def visitPrintfFun(self, ctx: ToyCParser.PrintfFunContext):
+		# printfFun : 'printf' '(' (itemSTRING | itemID) (','expr)* ')';
 		if "printf" in self.funcs:
 			ir_func = self.funcs["printf"]
 		else:
@@ -135,8 +135,8 @@ class ToyCGenerator(ToyCVisitor):
 			return_value_name = builder.call(ir_func, args)
 		return {"type": ir_int, "name": return_value_name}
 
-	def visitScanfFunc(self, ctx: ToyCParser.ScanfFuncContext):
-		# scanfFunc : 'scanf' '(' mSTRING (','('&')?(mID|arrayItem))* ')';
+	def visitScanfFun(self, ctx: ToyCParser.ScanfFunContext):
+		# scanfFun : 'scanf' '(' itemSTRING (','('&')?(itemID|arrayItem))* ')';
 		if "scanf" in self.funcs:
 			ir_func = self.funcs["scanf"]
 		else:
@@ -147,19 +147,20 @@ class ToyCGenerator(ToyCVisitor):
 		zero = ir.Constant(ir_int, 0)
 		params = self.visit(ctx.getChild(0))
 		args = [builder.gep(params["name"], [zero, zero], inbounds = True)]
-		for i in range(4, ctx.getChildCount() - 1, 2):
+		i = 4
+		while i < ctx.getChildCount() - 1:
 			offset = 1 if ctx.getChild(i).getText() == "&" else 0
 			tmp = self.need_load
 			self.need_load = offset == 0
 			param = self.visit(ctx.getChild(i + offset))
 			self.need_load = tmp
 			args.append(param["name"])
-			i += offset
+			i += offset + 2
 		return_value_name = builder.call(ir_func, args)
 		return {"type": ir_int, "name": return_value_name}
 
-	def visitSelfDefinedFunc(self, ctx: ToyCParser.SelfDefinedFuncContext):
-		# selfDefinedFunc : mID '('((argument|mID)(','(argument|mID))*)? ')';
+	def visitOtherFun(self, ctx: ToyCParser.SelfDefinedFuncContext):
+		# otherFun : itemID '('((argument|itemID)(','(argument|itemID))*)? ')';
 		builder = self.builders[-1]
 		func_name = ctx.getChild(0).getText()
 		if func_name not in self.funcs:
@@ -173,3 +174,187 @@ class ToyCGenerator(ToyCVisitor):
 			params.append(param["name"])
 		return_value_name = builder.call(ir_func, params)
 		return {"type": ir_func.function_type.return_type, "name": return_value_name}
+
+	def visitBlock(self, ctx: ToyCParser.BlockContext):
+		# block : initBlock | initArrBlock | ifBlocks | forBlock | whileBlock | assignBlock | returnBlock;
+		for i in range(ctx.getChildCount())
+			self.visit(ctx.getChild(i))
+
+	def visitInitBlock(self, ctx: ToyCParser.InitBlockContext):
+		# initBlock : (itemType) itemID ('=' expr)? (',' itemID ('=' expr)?)* ';';
+		item_type = self.visit(ctx.getChild(0))
+		i = 1
+		while i < ctx.getChildCount:
+			item_name = ctx.getChild().getText()
+			if self.symbol_table.isGlobal():
+				ir_variable = ir.GlobalVariable(self.module, item_type, name = item_name);
+				ir_variable.linkage = "internal"
+			else:
+				ir_variable = self.builders[-1].alloca(item_type, name = item_name)
+			variable = {"type": item_type, "name": ir_variable}
+			if not self.symbol_table.add(item_name, variable):
+				raise CompileError(context = ctx, message = "Duplicate variable name")
+			if ctx.getChild(i + 1).getText() != "=":
+				i += 2
+			else:
+				init_value = self.visit(ctx.getChild(i + 2))
+				if self.symbol_table.isGlobal():
+					ir_variable.initializer = ir.Constant(init_value["type"], init_value["name"].constant)
+				else:
+					init_value = self.convert(init_value, item_type)
+					self.builders[-1].store(init_value["name"], ir_variable)
+				i += 4
+
+	def visitInitArrBlock(self, ctx: ToyCParser.InitArrBlockContext):
+		# initArrBlock : itemType itemID '[' itemINT ']'';';
+		item_type = self.visit(ctx.getChild(0))
+		item_name = ctx.getChild(1).getText()
+		item_length = int(ctx.getChild(3).getText())
+		if self.isGlobal():
+			ir_variable = ir.GlobalVariable(self.module, ir.ArrayType(item_type, item_length), name = item_name)
+			ir_variable.linkage = "internal"
+		else:
+			ir_variable = self.builder[-1].alloca(ir.ArrayType(item_type, item_length), name = item_name)
+		variable = {"type": ir.ArrayType(item_type, item_length), "name": ir_variable}
+		if not self.symbol_table.add(item_name, variable):
+			raise CompileError(context = ctx, message = "Duplicate array name")
+
+	def visitAssignBlock(self, ctx: ToyCParser.AssignBlockContext):
+		# assignBlock : ((arrayItem|itemID) '=')+  expr ';';
+		builder = self.builders[-1]
+		item_id = ctx.getChild(0).getText()
+		if '[' not in and not self.symbol_table.ifExist(item_id):
+			raise CompileError("Undefined variable")
+		right_value = self.visit(ctx.getChild(ctx.getChildCount() - 2))
+		right_value = {"type": right_value["type"], "name": right_value["name"]}
+		for i in range(0, ctx.getChildCount() - 2, 2):
+			tmp = self.need_load
+			self.need_load = False
+			left_value = self.visit(ctx.getChild(i))
+			self.need_load = tmp
+			# TODO: Check if this is right
+			value_for_this = self.convert(right_value, left_value["type"])
+			builder.store(left_value["name"], value_for_this["name"])
+			# TODO: Chekc if this is right
+		return {"type": left_value["type"], "name": builder.load(left_value["name"])}
+
+	def visitCondition(self, ctx: ToyCParser.ConditionBlockContext):
+		# condition :  expr;
+		return self.toBoolean(self.visit(ctx.getChild(0)), False)
+
+	def __update_2b(self, block):
+		a, b = self.blocks.pop(), self.builders.pop()
+		self.blocks.append(block)
+		self.builders.append(ir.IRBuilder(block))
+		return a, b
+
+	def visitIfBlocks(self, ctx: ToyCParser.IfBlocksContext):
+		# ifBlocks : ifBlock (elifBlock)* (elseBlock)?;
+		builder = self.builders[-1]
+		if_block = builder.append_basic_block()
+		endif_block = builder.append_basic_block()
+		builder.branch(if_block)
+		self.__update_2b(if_block)
+		if self.endif_block is not None:
+			tmp = self.endif_block
+		self.endif_block = endif_block
+		for i in range(ctx.getChildCount()):
+			self.visit(ctx.getChild(i))
+		self.endif_block = tmp
+		# TODO: Check order correct
+		tmp_block, tmp_builder = self.__update_2b(endif_block)
+		if not tmp_block.is_terminated:
+			tmp_builder.branch(endif_block)
+		
+	def visitIfBlock(self, ctx: ToyCParser.IfBlockContext):
+		# ifBlock : 'if' '('condition')' '{' body '}';
+		self.symbol_table.addLevel()
+		builder = self.builders[-1]
+		true_block = builder.append_basic_block()
+		false_block = builder.append_basic_block()
+		condition = self.visit(ctx.getChild(2))
+		builder.cbranch(condition["name"], true_block, false_block)
+		self.blocks.pop()
+		self.builders.pop()
+		self.blocks.append(true_block)
+		self.builders.append(ir.IRBuilder(true_block))
+		self.visit(ctx.getChild(5))
+		if not self.builders[-1].is_terminated:
+			self.builders[-1].branch(self.endif_block)
+		self.blocks.pop()
+		self.builders.pop()
+		self.blocks.append(false_block)
+		self.builders.append(ir.IRBuilder(false_block))
+		# TODO: Check asymmetrical
+		self.symbol_table.declineLevel()
+
+	def visitElifBlock(self, ctx: ToyCParser.ElifBlockContext):
+		# elifBlock : 'else' 'if' '(' condition ')' '{' body '}';
+		self.symbol_table.addLevel()
+		builder = self.builders[-1]
+		true_block = builder.append_basic_block()
+		false_block = builder.append_basic_block()
+		condition = self.visit(ctx.getChild(3))
+		builder.cbranch(condition["name"], true_block, false_block)
+		self.__update_2b(true_block)
+		self.visit(ctx.getChild(6))
+		if not self.builders[-1].is_terminated:
+			self.builders[-1].branch(self.endif_block)
+		self.__update_2b(false_block)
+		# TODO: Check asymmetrical
+		self.symbol_table.declineLevel()
+
+	def visitElseBlock(self, ctx: ElseBlockContext):
+		# elseBlock : 'else' '{' body '}';
+		self.symbol_table.addLevel()
+		self.visit(ctx.getChild(2))
+		self.symbol_table.declineLevel()
+
+	def visitWhileBlock(self, ctx: WhileBlockContext):
+		self.symbol_table.addLevel()
+		builder = self.builders[-1]
+		condition_block = builder.append_basic_block()
+		body = builder.append_basic_block()
+		end_while = builder.append_basic_block()
+		builder.branch(condition_block)
+		self.__update_2b(condition_block)
+		condition = self.visit(ctx.getChild(2))
+		self.builders[-1].cbranch(condition["name"], body, end_while)
+		self.__update_2b(body)
+		self.visit(ctx.getChild(5))
+		self.Builders[-1].branch(condition_block)
+		self.__update_2b(end_while)
+		self.symbol_table.declineLevel()
+
+	def visitForBlock(self, ctx: ToyCParser.ForBlockContext):
+		# forBlock : 'for' '(' forExpr  ';' condition ';' forExpr ')' ('{' body '}'|';');
+		self.symbol_table.addLevel()
+		self.visit(ctx.getChild(2))
+		builder = self.builders[-1]
+		condition_block = builder.append_basic_block()
+		body = builder.append_basic_block()
+		end_for = builder.append_basic_block()
+		builder.branch(condition_block)
+		self.__update_2b(condition_block)
+		condition = self.visit(ctx.getChild(4))
+		self.builders[-1].cbranch(condition["name"], body, end_for)
+		self.__update_2b(body)
+		if ctx.getChildCount() == 11:
+			self.visit(ctx.getChild(9))
+		self.visit(ctx.getChild(6))
+		self.builders[-1].branch(condition_block)
+		self.__update_2b(end_for)
+		self.symbol_table.declineLevel()
+
+	def visitForExpr(self, ctx: ToyCParser.ForExprContext):
+		# forExpr :  itemID '=' expr (',' forExpr)?|;
+		if ctx.getChildCount() == 0:
+			return
+		tmp = self.need_load
+		self.need_load = False
+		item_id = self.visit(ctx.getChild(0))
+		self.need_load = tmp
+		expr_id = self.convert(self.visit(ctx.getChild(2)), item_id["type"])
+		self.builders[-1].store(expr_id["name"], item_id["name"])
+		if ctx.getChildCount() > 3:
+			self.visit(ctx.getChild(4))
