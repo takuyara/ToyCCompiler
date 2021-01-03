@@ -164,6 +164,98 @@ class ToyCGenerator(ToyCVisitor):
         Result = {'type': int32, 'name': ReturnVariableName}
         return Result
     
+    def visitARRAY(self, ctx:ToyCParser.ARRAYContext):
+        return self.visit(ctx.getChild(0))
+    
+    def visitSTRING(self, ctx:ToyCParser.STRINGContext):
+        return self.visit(ctx.getChild(0))
+    
+    def visitDOUBLE(self, ctx:ToyCParser.DOUBLEContext):
+        if ctx.getChild(0).getText() == '-':
+            IndexMid = self.visit(ctx.getChild(1))
+            Builder = self.builders[-1]
+            RealReturnValue = Builder.neg(IndexMid['name'])
+            return {
+                    'type': IndexMid['type'],
+                    'name': RealReturnValue
+            }
+        return self.visit(ctx.getChild(0))
+    
+    def visitID(self, ctx:ToyCParser.IDContext):
+        return self.visit(ctx.getChild(0))
+    
+    def visitMULDIV(self, ctx:ToyCParser.MULDIVContext):
+        Builder = self.builders[-1]
+        Index1 = self.visit(ctx.getChild(0))
+        Index2 = self.visit(ctx.getChild(2))
+        Index1, Index2 = self.exprConvert(Index1, Index2)
+        JudgeReg = False
+        if ctx.getChild(1).getText() == '*':
+            RealReturnValue = Builder.mul(Index1['name'], Index2['name'])
+        elif ctx.getChild(1).getText() == '/':
+            RealReturnValue = Builder.sdiv(Index1['name'], Index2['name'])
+        elif ctx.getChild(1).getText() == '%':
+            RealReturnValue = Builder.srem(Index1['name'], Index2['name'])
+        return {
+                'type': Index1['type'],
+                'const': JudgeReg,
+                'name': RealReturnValue
+        }
+    
+    def visitADDSUB(self, ctx:ToyCParser.ADDSUBContext):
+        Builder = self.builders[-1]
+        Index1 = self.visit(ctx.getChild(0))
+        Index2 = self.visit(ctx.getChild(2))
+        Index1, Index2 = self.exprConvert(Index1, Index2)
+        JudgeReg = False
+        if ctx.getChild(1).getText() == '+':
+            RealReturnValue = Builder.add(Index1['name'], Index2['name'])
+        elif ctx.getChild(1).getText() == '-':
+            RealReturnValue = Builder.sub(Index1['name'], Index2['name'])
+        return {
+                'type': Index1['type'],
+                'const': JudgeReg,
+                'name': RealReturnValue
+        }
+    
+    def visitNEG(self, ctx:ToyCParser.NEGContext):
+        RealReturnValue = self.visit(ctx.getChild(1))
+        RealReturnValue = self.toBoolean(RealReturnValue, notFlag = True)
+        # res 未返回
+        return self.visitChildren(ctx)
+    
+    def visitINT(self, ctx:ToyCParser.INTContext):
+        if ctx.getChild(0).getText() == '-':
+            IndexMid = self.visit(ctx.getChild(1))
+            Builder = self.builders[-1]
+            RealReturnValue = Builder.neg(IndexMid['name'])
+            return {
+                    'type': IndexMid['type'],
+                    'name': RealReturnValue
+            }
+        return self.visit(ctx.getChild(0))
+
+    def visitFUNCTION(self, ctx:ToyCParser.FUNCTIONContext):
+        return self.visit(ctx.getChild(0))
+
+    def visitOR(self, ctx:ToyCParser.ORContext):
+        Index1 = self.visit(ctx.getChild(0))
+        Index1 = self.toBoolean(Index1, notFlag=False)
+        Index2 = self.visit(ctx.getChild(2))
+        Index2 = self.toBoolean(Index2, notFlag=False)
+        Builder = self.builders[-1]
+        RealReturnValue = Builder.or_(Index1['name'], Index2['name'])
+        return {
+                'type': Index1['type'],
+                'const': False,
+                'name': RealReturnValue
+        }
+    
+    def visitCHAR(self, ctx:ToyCParser.CHARContext):
+        return self.visit(ctx.getChild(0))
+    
+    
+
     def visitCondition(self, ctx:ToyCParser.ConditionContext):
         result = self.visit(ctx.getChild(0))
         return self.toBoolean(result, notFlag=False)
@@ -179,6 +271,68 @@ class ToyCGenerator(ToyCVisitor):
 
     def visitArrayItem(self, ctx:ToyCParser.ArrayItemContext):
         return self.visit(ctx.getChild(0))
+
+
+
+    def visitOtherFun(self, ctx:ToyCParser.OtherFunContext):
+        #获取返回值类型
+        ReturnType = self.visit(ctx.getChild(0)) # mtype
+        
+        #获取函数名 todo
+        FunctionName = ctx.getChild(1).getText() # func name
+        
+        #获取参数列表
+        ParameterList = self.visit(ctx.getChild(3)) # func params
+
+        #根据返回值，函数名称和参数生成llvm函数
+        ParameterTypeList = []
+        for i in range(len(ParameterList)):
+            ParameterTypeList.append(ParameterList[i]['type'])
+        LLVMFunctionType = ir.FunctionType(ReturnType, ParameterTypeList)
+        LLVMFunction = ir.Function(self.module, LLVMFunctionType, name = FunctionName)
+
+        #存储函数的变量        
+        for i in range(len(ParameterList)):
+            LLVMFunction.args[i].name = ParameterList[i]['IDname']
+
+        #存储函数的block
+        TheBlock = LLVMFunction.append_basic_block(name = FunctionName + '.entry')
+
+        #判断重定义，存储函数
+        if FunctionName in self.Functions:
+            raise SemanticError(ctx=ctx,msg="函数重定义错误！")
+        else:
+            self.Functions[FunctionName] = LLVMFunction
+
+        TheBuilder = ir.IRBuilder(TheBlock)
+        self.blocks.append(TheBlock)
+        self.builders.append(TheBuilder)
+
+        #进一层
+        self.current_func = FunctionName
+        self.symbol_table.addLevel()
+
+        #存储函数的变量
+        VariableList = {}
+        for i in range(len(ParameterList)):
+            NewVariable = TheBuilder.alloca(ParameterList[i]['type'])
+            TheBuilder.store(LLVMFunction.args[i], NewVariable)
+            TheVariable = {}
+            TheVariable["Type"] = ParameterList[i]['type']
+            TheVariable["Name"] = NewVariable
+            TheResult = self.SymbolTable.AddItem(ParameterList[i]['IDname'], TheVariable)
+            if TheResult["result"] != "success":
+                raise SemanticError(ctx=ctx,msg=TheResult["reason"])
+
+        #处理函数body
+        self.visit(ctx.getChild(6)) # func body
+
+        #处理完毕，退一层
+        self.CurrentFunction = ''
+        self.blocks.pop()
+        self.builders.pop()
+        self.symbol_table.declineLevel()
+        return
 
     def visitArgument(self, ctx:ToyCParser.ArgumentContext):
         return self.visit(ctx.getChild(0))
@@ -259,6 +413,10 @@ class ToyCGenerator(ToyCVisitor):
                 'const': JudgeReg,
                 'name': RealReturnValue
         }
+    
+    #TODO: 
+    def visitItemLIB(self, ctx:ToyCParser.ItemLIBContext):
+        pass
 
     def toBoolean(self, ManipulateIndex, notFlag = True):
         Builder = self.builders[-1]
@@ -281,6 +439,7 @@ class ToyCGenerator(ToyCVisitor):
                     'name': RealReturnValue
             }
         return ManipulateIndex
+    
 
     def save_to_file(self, filename):
         with open(filename, "w") as f:
