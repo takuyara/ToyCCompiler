@@ -1,0 +1,13 @@
+[[source]]
+name = "pypi"
+url = "http://mirrors.aliyun.com/pypi/simple/"
+verify_ssl = false
+
+[dev-packages]
+
+[packages]
+antlr4-python3-runtime = "==4.9"
+llvmlite = "*"
+
+[requires]
+python_version = "3.8"
