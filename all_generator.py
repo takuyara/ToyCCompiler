@@ -170,6 +170,7 @@ class ToyCGenerator(ToyCVisitor):
         return_value_name = builder.call(ir_func, args)
         return {"type": ir_int, "name": return_value_name}
 
+    '''
     def visitStrlenFun(self, ctx: ToyCParser.StrlenFunContext):
         if "strlen" in self.funcs:
             ir_func = self.funcs["strlen"]
@@ -201,6 +202,7 @@ class ToyCGenerator(ToyCVisitor):
         self.need_load = tmp
         args = [builder.gep(params["name"], [zero, zero], inbounds = True)]
         return {"type": ir_int, "name": builder.call(ir_func, args)}
+    '''
 
     def visitOtherFun(self, ctx: ToyCParser.OtherFunContext):
         # otherFun : itemID '('((argument|itemID)(','(argument|itemID))*)? ')';
@@ -320,17 +322,11 @@ class ToyCGenerator(ToyCVisitor):
         false_block = builder.append_basic_block()
         condition = self.visit(ctx.getChild(2))
         builder.cbranch(condition["name"], true_block, false_block)
-        self.blocks.pop()
-        self.builders.pop()
-        self.blocks.append(true_block)
-        self.builders.append(ir.IRBuilder(true_block))
+        self.__update_2b(true_block)
         self.visit(ctx.getChild(5))
-        if not self.blocks[-1].is_terminated:
-            self.builders[-1].branch(self.endif_block)
-        self.blocks.pop()
-        self.builders.pop()
-        self.blocks.append(false_block)
-        self.builders.append(ir.IRBuilder(false_block))
+        tmpblock, tmpbuilder = self.__update_2b(false_block)
+        if not tmpblock.is_terminated:
+            tmpbuilder.branch(self.endif_block)
         # TODO: Check asymmetrical
         self.symbol_table.declineLevel()
 
@@ -344,9 +340,9 @@ class ToyCGenerator(ToyCVisitor):
         builder.cbranch(condition["name"], true_block, false_block)
         self.__update_2b(true_block)
         self.visit(ctx.getChild(6))
-        if not self.builders[-1].is_terminated:
-            self.builders[-1].branch(self.endif_block)
-        self.__update_2b(false_block)
+        tmpblock, tmpbuilder = self.__update_2b(false_block)
+        if not tmpblock.is_terminated:
+            tmpbuilder.branch(self.endif_block)
         # TODO: Check asymmetrical
         self.symbol_table.declineLevel()
 
@@ -512,6 +508,9 @@ class ToyCGenerator(ToyCVisitor):
 
     def visitID(self, ctx:ToyCParser.IDContext):
         return self.visit(ctx.getChild(0))
+
+    def visitEXP(self, ctx:ToyCParser.EXPContext):
+        return self.visit(ctx.getChild(1))
     
     def visitMULDIV(self, ctx:ToyCParser.MULDIVContext):
         builder = self.builders[-1]
@@ -548,6 +547,7 @@ class ToyCGenerator(ToyCVisitor):
         return self.visit(ctx.getChild(0))
 
     def visitOR(self, ctx:ToyCParser.ORContext):
+        print(ctx.getText())
         index1 = self.toBoolean(self.visit(ctx.getChild(0)), notFlag=False)
         index2 = self.toBoolean(self.visit(ctx.getChild(2)), notFlag=False)
         return_value = self.builders[-1].or_(index1['name'], index2['name'])

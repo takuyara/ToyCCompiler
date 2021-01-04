@@ -10,11 +10,13 @@ int main()
     int num = 0, i;
     printf("Please input expression: ");
     gets(expression);
+    printf("Gets done");
     length = strlen(expression);
     for(i = length - 1; i >= 0; i = i - 1) 
     {
         expression[i + 1] = expression[i];
     }
+    printf("Expression done");
     i = length + 1;
     expression[0] = '(';
     expression[length + 1] = ')';
