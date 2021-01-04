@@ -235,7 +235,7 @@ class ToyCGenerator(ToyCVisitor):
         builder = self.builders[-1]
         item_id = ctx.getChild(0).getText()
         if '[' not in item_id and not self.symbol_table.ifExist(item_id):
-            raise CompileError("Undefined variable")
+            raise CompileError(context = ctx, message = "Undefined variable")
         # print("Value: ", ctx.getChild(ctx.getChildCount() - 2).getText())
         right_value = self.visit(ctx.getChild(ctx.getChildCount() - 2))
         right_value = {"type": right_value["type"], "name": right_value["name"]}
@@ -246,7 +246,7 @@ class ToyCGenerator(ToyCVisitor):
             left_value = self.visit(ctx.getChild(i))
             self.need_load = tmp
             # TODO: Check if this is right
-            print("Left name: ", left_value["name"])
+            # print("Left name: ", left_value["name"])
             value_for_this = self.convert(right_value, left_value["type"])
             # print("ASSIGN: ", left_value["name"], "   FFFF     ", value_for_this["name"])
             builder.store(value_for_this["name"], left_value["name"])
@@ -328,16 +328,35 @@ class ToyCGenerator(ToyCVisitor):
         self.symbol_table.addLevel()
         builder = self.builders[-1]
         condition_block = builder.append_basic_block()
+        print("Condition: ", condition_block)
         body = builder.append_basic_block()
+        print("Body: ", body)
         end_while = builder.append_basic_block()
         builder.branch(condition_block)
-        self.__update_2b(condition_block)
+        # self.__update_2b(condition_block)
+        self.blocks.pop()
+        self.builders.pop()
+        self.blocks.append(condition_block)
+        self.builders.append(ir.IRBuilder(condition_block))
+
         condition = self.visit(ctx.getChild(2))
         self.builders[-1].cbranch(condition["name"], body, end_while)
-        self.__update_2b(body)
+
+        #self.__update_2b(body)
+        self.blocks.pop()
+        self.builders.pop()
+        self.blocks.append(body)
+        self.builders.append(ir.IRBuilder(body))
         self.visit(ctx.getChild(5))
+
         self.builders[-1].branch(condition_block)
-        self.__update_2b(end_while)
+
+        # self.__update_2b(end_while)
+        self.blocks.pop()
+        self.builders.pop()
+        self.blocks.append(end_while)
+        self.builders.append(ir.IRBuilder(end_while))
+        
         self.symbol_table.declineLevel()
 
     def visitForBlock(self, ctx: ToyCParser.ForBlockContext):
@@ -369,6 +388,7 @@ class ToyCGenerator(ToyCVisitor):
         item_id = self.visit(ctx.getChild(0))
         self.need_load = tmp
         expr_id = self.convert(self.visit(ctx.getChild(2)), item_id["type"])
+        # print("left: %s, right: %s" % (item_id["name"], expr_id["name"]))
         self.builders[-1].store(expr_id["name"], item_id["name"])
         if ctx.getChildCount() > 3:
             self.visit(ctx.getChild(4))
@@ -408,7 +428,7 @@ class ToyCGenerator(ToyCVisitor):
     def isInteger(self, object):
         return hasattr(object, "width")
 
-    def exprConvert(self, index1, index2):
+    def expr_convert(self, index1, index2):
         if index1['type'] == index2['type']:
             return index1, index2
         if self.isInteger(index1['type']) and self.isInteger(index2['type']):
@@ -445,12 +465,25 @@ class ToyCGenerator(ToyCVisitor):
             return {'type': index['type'], 'name': self.builders[-1].neg(index['name'])}
         return self.visit(ctx.getChild(0))
     
+    def visitEQUA(self, ctx: ToyCParser.EQUAContext):
+        # expr op=('==' | '!=' | '<' | '<=' | '>' | '>=') expr
+        builder = self.builders[-1]
+        op1, op2 = self.expr_convert(self.visit(ctx.getChild(0)), self.visit(ctx.getChild(2)))
+        operator = ctx.getChild(1).getText()
+        if op1["type"] == ir_double:
+            return_value = builder.fcmp_ordered(operator, op1["name"], op2["name"])
+        elif self.isInteger(op1["type"]):
+            return_value = builder.icmp_signed(operator, op1["name"], op2["name"])
+        else:
+            raise CompileError(ctx, "Type mismatch: not able to compare.")
+        return {"type": ir_bool, "const": False, "name": return_value}
+
     def visitID(self, ctx:ToyCParser.IDContext):
         return self.visit(ctx.getChild(0))
     
     def visitMULDIV(self, ctx:ToyCParser.MULDIVContext):
         builder = self.builders[-1]
-        index1, index2 = self.exprConvert(self.visit(ctx.getChild(0)), self.visit(ctx.getChild(2)))
+        index1, index2 = self.expr_convert(self.visit(ctx.getChild(0)), self.visit(ctx.getChild(2)))
         JudgeReg = False
         if ctx.getChild(1).getText() == '*':
             return_value = builder.mul(index1['name'], index2['name'])
@@ -462,7 +495,7 @@ class ToyCGenerator(ToyCVisitor):
     
     def visitADDSUB(self, ctx:ToyCParser.ADDSUBContext):
         builder = self.builders[-1]
-        index1, index2 = self.exprConvert(self.visit(ctx.getChild(0)), self.visit(ctx.getChild(2)))
+        index1, index2 = self.expr_convert(self.visit(ctx.getChild(0)), self.visit(ctx.getChild(2)))
         if ctx.getChild(1).getText() == '+':
             return_value = builder.add(index1['name'], index2['name'])
         elif ctx.getChild(1).getText() == '-':
@@ -591,5 +624,5 @@ def generate(input_filename, output_filename):
     tree = parser.prog()
     generator = ToyCGenerator()
     generator.visit(tree)
-    print(generator.module)
+    # print(generator.module)
     generator.save_to_file(output_filename)
