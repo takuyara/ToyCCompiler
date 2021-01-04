@@ -624,5 +624,4 @@ def generate(input_filename, output_filename):
     tree = parser.prog()
     generator = ToyCGenerator()
     generator.visit(tree)
-    # print(generator.module)
     generator.save_to_file(output_filename)
