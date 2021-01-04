@@ -170,6 +170,38 @@ class ToyCGenerator(ToyCVisitor):
         return_value_name = builder.call(ir_func, args)
         return {"type": ir_int, "name": return_value_name}
 
+    def visitStrlenFun(self, ctx: ToyCParser.StrlenFunContext):
+        if "strlen" in self.funcs:
+            ir_func = self.funcs["strlen"]
+        else:
+            param_types = ir.FunctionType(ir_int, [ir.PointerType(ir_char)], var_arg = False)
+            ir_func = ir.Function(self.module, param_types, name = "strlen")
+            self.funcs["strlen"] = ir_func
+        builder = self.builders[-1]
+        zero = ir.Constant(ir_int, 0)
+        tmp = self.need_load
+        self.need_load = False
+        params = self.visit(ctx.getChild(2))
+        self.need_load = tmp
+        args = [builder.gep(params["name"], [zero, zero], inbounds = True)]
+        return {"type": ir_int, "name": builder.call(ir_func, args)}
+
+    def visitGetsFun(self, ctx: ToyCParser.GetsFunContext):
+        if "gets" in self.funcs:
+            ir_func = self.funcs["gets"]
+        else:
+            param_types = ir.FunctionType(ir_int, [], var_arg = True)
+            ir_func = ir.Function(self.module, param_types, name = "gets")
+            self.funcs["gets"] = ir_func
+        builder = self.builders[-1]
+        zero = ir.Constant(ir_int, 0)
+        tmp = self.need_load
+        self.need_load = False
+        params = self.visit(ctx.getChild(2))
+        self.need_load = tmp
+        args = [builder.gep(params["name"], [zero, zero], inbounds = True)]
+        return {"type": ir_int, "name": builder.call(ir_func, args)}
+
     def visitOtherFun(self, ctx: ToyCParser.OtherFunContext):
         # otherFun : itemID '('((argument|itemID)(','(argument|itemID))*)? ')';
         builder = self.builders[-1]
@@ -225,7 +257,7 @@ class ToyCGenerator(ToyCVisitor):
             ir_variable = ir.GlobalVariable(self.module, ir.ArrayType(item_type, item_length), name = item_name)
             ir_variable.linkage = "internal"
         else:
-            ir_variable = self.builder[-1].alloca(ir.ArrayType(item_type, item_length), name = item_name)
+            ir_variable = self.builders[-1].alloca(ir.ArrayType(item_type, item_length), name = item_name)
         variable = {"type": ir.ArrayType(item_type, item_length), "name": ir_variable}
         if not self.symbol_table.add(item_name, variable):
             raise CompileError(context = ctx, message = "Duplicate array name")
@@ -236,7 +268,7 @@ class ToyCGenerator(ToyCVisitor):
         item_id = ctx.getChild(0).getText()
         if '[' not in item_id and not self.symbol_table.ifExist(item_id):
             raise CompileError(context = ctx, message = "Undefined variable")
-        # print("Value: ", ctx.getChild(ctx.getChildCount() - 2).getText())
+        print("Value: ", ctx.getChild(ctx.getChildCount() - 2).getText())
         right_value = self.visit(ctx.getChild(ctx.getChildCount() - 2))
         right_value = {"type": right_value["type"], "name": right_value["name"]}
         # print("Name: ", right_value["name"])
