@@ -1,31 +1,30 @@
-#include <stdlib.h>
-#include <string.h>
-
-int main() {
-	printf("Please input Char Array Under 1000 characters\n");
-	char StringGet[1002];
-	gets(StringGet);
-	int len, i;
-	len = strlen(StringGet);
-	if (len < 0 || len > 1000) 
-	{
-		printf("Input Error, only one more chance:\n");
-		gets(StringGet);
-	}
-	else 
-	{
-		int IsPLD = -1;
-		for (i = 0; i + i < len && IsPLD != 1; i = i + 1) 
-		{
-			if (StringGet[len - 1 - i] != StringGet[i]) 
-			{
-                printf("False\n");
-                IsPLD = 1;
-            }
+#include <stdio.h>
+char a[1000];
+int len;
+int check(){
+	int i;
+	for (i = 0; i < len; i = i + 1){
+		if (a[i] != a[len - i - 1]){
+			return 0;
 		}
-        if (IsPLD != 1) {
-        	printf("True\n");
-        }
-    }
+	}
+	return 1;
+}
+int main(){
+	int i;
+	char tmpchar;
+	printf("Input length: ");
+	scanf("%d%", &len);
+	printf("Input string: ");
+	scanf("%c", &tmpchar);
+	for (i = 0; i < len; i = i + 1){
+		scanf("%c", &a[i]);
+	}
+	if (check() == 0){
+		printf("Not palindrome\n");
+	} else {
+		printf("Palindrome\n");
+	}
 	return 0;
 }
+

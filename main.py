@@ -1,4 +1,4 @@
-from all_generator import generate
+from ToyCGenerator import generate
 import sys
 
 if __name__ == '__main__':
